@@ -1,72 +1,179 @@
 /**
- * Nexus SDK - Main entry point
+ * @nexus/sdk - Nexus AI Cognitive Services SDK
+ *
+ * Unified entry point that re-exports the public API surface:
+ * - {@link NexusClient} - Main client class (primary entry point)
+ * - Service classes - For advanced / standalone usage
+ * - Configuration helpers and types
+ * - Error hierarchy
+ * - Domain type definitions
  *
  * @example
- * ```ts
+ * ```typescript
  * import { NexusClient } from '@nexus/sdk';
  *
- * const client = new NexusClient({
- *   apiKey: 'nx_live_your_api_key'
+ * const nexus = new NexusClient({
+ *   apiKey: process.env.NEXUS_API_KEY!,
+ * });
+ *
+ * const ctx = await nexus.context.retrieve({
+ *   user_id: 'user123',
+ *   query: '用户偏好',
  * });
  * ```
  */
 
-// Client
-export { NexusClient, type TenantInfo, type UsageStats } from './client';
+// ---------------------------------------------------------------------------
+// Main client
+// ---------------------------------------------------------------------------
+export { NexusClient } from './client';
 
-// HTTP client (for advanced usage)
-export { HttpClient } from './http';
+// ---------------------------------------------------------------------------
+// Configuration
+// ---------------------------------------------------------------------------
+export { resolveConfig, DEFAULT_CONFIG } from './config';
+export type {
+  NexusConfig,
+  ResolvedConfig,
+  CacheConfig,
+  RetryConfig,
+  ResolvedCacheConfig,
+  ResolvedRetryConfig,
+} from './config';
 
+// ---------------------------------------------------------------------------
+// Services (for advanced / standalone usage)
+// ---------------------------------------------------------------------------
+export { ContextService } from './services/context';
+export { MemoryService } from './services/memories';
+export { ConversationService } from './services/conversations';
+export { KnowledgeService } from './services/knowledge';
+export { ActivityService } from './services/activities';
+export { TenantService } from './services/tenants';
+
+// ---------------------------------------------------------------------------
 // Errors
+// ---------------------------------------------------------------------------
 export {
   NexusError,
+  ConfigurationError,
   NetworkError,
-  ValidationError,
+  TimeoutError,
+} from './errors';
+export {
+  ApiError,
   AuthenticationError,
-  QuotaExceededError,
+  RateLimitError,
+  ValidationError,
   NotFoundError,
-  ServerError,
 } from './errors';
 
+// ---------------------------------------------------------------------------
 // Types
+//
+// Note: The `ApiError` interface from `./types` is intentionally excluded
+// to avoid a naming collision with the `ApiError` class from `./errors`.
+// Consumers who need the raw API error *shape* can import `ApiErrorDetail`
+// instead, or import `ApiError` directly from `@nexus/sdk/types`.
+// ---------------------------------------------------------------------------
+
+// Common types (excluding ApiError to avoid collision with errors/ApiError class)
 export type {
-  // Common
-  NexusClientConfig,
-  PaginationOptions,
-  PaginationMeta,
-  // Memory
-  Memory,
-  MemoryCategory,
-  CreateMemoryDto,
-  SearchMemoryDto,
-  UpdateMemoryDto,
-  // Conversation
-  Conversation,
-  Message,
-  MessageRole,
-  CreateConversationDto,
-  AddMessageDto,
-  ConversationSummary,
-  // Context
-  ContextRetrieveOptions,
-  ContextRetrieveDto,
-  ContextRetrieveResponse,
-  ContextProfile,
-  ContextMemory,
-  ContextHistory,
-  ContextMessage,
-  ContextGraph,
-  ContextEntity,
-  ContextRelation,
-  // Knowledge
-  OwnerType,
-  KnowledgeExtractDto,
-  KnowledgeExtractResult,
-  Entity,
-  Relationship,
-  KnowledgeQueryDto,
-  KnowledgeQueryResult,
+  Pagination,
+  PaginatedResponse,
+  ApiResponse,
+  ApiErrorDetail,
+  HealthResponse,
+  HealthStatus,
+  ServiceStatus,
+  CompoundId,
+  SortOrder,
 } from './types';
 
-// SDK version
-export const SDK_VERSION = '0.1.0-alpha';
+// Context types
+export type {
+  ContextLayer,
+  ContextRequest,
+  ContextRetrieveOptions,
+  ContextRetrieveRequest,
+  ContextMemory,
+  ContextProfile,
+  ContextMessage,
+  ContextHistory,
+  ContextEntity,
+  ContextRelation,
+  ContextGraph,
+  ContextMeta,
+  ContextRetrieveResponse,
+  ProfileMemory,
+  ConversationMessage,
+  ContextKnowledgeEntity,
+  ContextResponse,
+  MemoryTypeFilter,
+  OwnerType,
+} from './types';
+
+// Memory types
+export type {
+  Memory,
+  MemoryCreate,
+  MemoryUpdate,
+  MemorySearch,
+  MemorySearchResult,
+  MemoryList,
+  JournalEntry,
+  JournalResponse,
+  MemoryType,
+} from './types';
+
+// Conversation types
+export type {
+  Conversation,
+  ConversationCreate,
+  ConversationDetail,
+  ConversationList,
+  Message,
+  MessageCreate,
+  MessageList,
+  ConversationSummary,
+  MessageRole,
+  ConversationStatus,
+} from './types';
+
+// Knowledge types
+export type {
+  KnowledgeEntity,
+  KnowledgeRelationship,
+  ExtractionRequest,
+  ExtractionResult,
+  EntityListResponse,
+  GraphQueryRequest,
+  GraphPathEntity,
+  GraphPathRelationship,
+  GraphPath,
+  GraphQueryResponse,
+} from './types';
+
+// Activity types
+export type {
+  Activity,
+  ActivityStreamRequest,
+  ActivityStreamResponse,
+  ActivityStatusResponse,
+  ActivityStats,
+  ActivityType,
+  ActivityProcessingStatus,
+} from './types';
+
+// Tenant types
+export type {
+  Tenant,
+  TenantQuotas,
+  TenantUsage,
+  ApiKey,
+  ApiKeyCreate,
+  ApiKeyCreated,
+  UsageStats,
+  TenantTier,
+  ApiKeyScope,
+} from './types';

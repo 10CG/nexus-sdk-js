@@ -1,101 +1,154 @@
 /**
- * Knowledge Service types
+ * @nexus/sdk - Knowledge Types
+ *
+ * Type definitions for the Knowledge Service powered by Fast GraphRAG.
+ * Supports entity extraction, relationship mapping, and graph traversal queries.
+ *
+ * Based on Nexus API v2.0 OpenAPI specification.
  */
+
+// ============== Knowledge Entity ==============
 
 /**
- * Owner type
+ * A knowledge entity in the graph.
+ * Represents a named concept, person, organization, or other entity.
  */
-export type OwnerType = 'user' | 'agent';
-
-/**
- * Knowledge extraction request
- */
-export interface KnowledgeExtractDto {
-  /** Text to extract entities from */
-  text: string;
-
-  /** Owner ID (user_id or agent_id) */
-  owner_id: string;
-
-  /** Owner type */
-  owner_type?: OwnerType;
-}
-
-/**
- * Entity in knowledge graph
- */
-export interface Entity {
-  /** Entity ID */
-  id: string;
-
-  /** Entity name */
+export interface KnowledgeEntity {
+  /** Unique entity identifier */
+  entity_id: string;
+  /** Entity display name */
   name: string;
-
-  /** Entity type */
+  /** Entity type classification (e.g., Person, Organization, Concept) */
   entity_type: string;
-
   /** Entity description */
   description?: string;
-
-  /** Entity properties */
+  /** Additional entity properties */
   properties?: Record<string, unknown>;
 }
 
 /**
- * Relationship in knowledge graph
+ * A relationship between two knowledge entities.
+ * Follows the Triplex format: (Subject, Relation, Object).
  */
-export interface Relationship {
-  /** Source entity ID or name */
+export interface KnowledgeRelationship {
+  /** Source entity name (Subject) */
   source: string;
-
-  /** Target entity ID or name */
+  /** Target entity name (Object) */
   target: string;
-
-  /** Relation type */
-  relation_type: string;
-
-  /** Relationship properties */
+  /** Relationship type label (Relation) */
+  relationship_type: string;
+  /** Additional relationship properties */
   properties?: Record<string, unknown>;
 }
 
-/**
- * Knowledge extraction result
- */
-export interface KnowledgeExtractResult {
-  /** Extracted entities */
-  entities: Entity[];
-
-  /** Extracted relationships */
-  relationships: Relationship[];
-}
+// ============== Entity Extraction ==============
 
 /**
- * Knowledge query request
+ * Request payload for extracting entities and relationships from text.
+ *
+ * POST /knowledge/extract
  */
-export interface KnowledgeQueryDto {
-  /** Query text */
-  query: string;
-
-  /** User ID */
-  user_id: string;
-
-  /** Agent ID */
+export interface ExtractionRequest {
+  /** Text to extract entities from (1-10000 characters) */
+  text: string;
+  /** Agent ID for public/shared knowledge (mutually exclusive with owner_user_id) */
   agent_id?: string;
-
-  /** Maximum results */
-  limit?: number;
+  /** User ID for private knowledge/social graph (mutually exclusive with agent_id) */
+  owner_user_id?: string;
 }
 
 /**
- * Knowledge query result
+ * Response from entity extraction operation.
  */
-export interface KnowledgeQueryResult {
-  /** Query answer */
-  answer: string;
+export interface ExtractionResult {
+  /** Extracted entities */
+  entities: KnowledgeEntity[];
+  /** Extracted relationships in Triplex format */
+  relationships: KnowledgeRelationship[];
+  /** Number of new entities created */
+  entities_created: number;
+  /** Number of new relationships created */
+  relationships_created: number;
+}
 
-  /** Source entities */
-  sources: string[];
+// ============== Entity List ==============
 
-  /** Relevant entities */
-  entities: Entity[];
+/**
+ * Paginated list of knowledge entities.
+ *
+ * GET /knowledge/entities?user_id=...
+ */
+export interface EntityListResponse {
+  /** Array of entity records */
+  entities: KnowledgeEntity[];
+  /** Total number of entities */
+  total_count: number;
+  /** Current page size limit */
+  limit: number;
+  /** Current offset */
+  offset: number;
+  /** Whether more results exist */
+  has_next: boolean;
+}
+
+// ============== Graph Query ==============
+
+/**
+ * Request payload for querying the knowledge graph.
+ * Uses BFS traversal from a starting entity.
+ *
+ * POST /knowledge/query
+ */
+export interface GraphQueryRequest {
+  /** Starting entity name for graph traversal */
+  entity_name: string;
+  /**
+   * Maximum traversal depth from the starting entity.
+   * @default 1
+   * @minimum 1
+   * @maximum 3
+   */
+  depth?: number;
+  /** Filter by specific relationship types (optional) */
+  relationship_types?: string[];
+}
+
+/** Entity reference within a graph path */
+export interface GraphPathEntity {
+  /** Entity identifier */
+  entity_id: string;
+  /** Entity display name */
+  name: string;
+  /** Entity type classification */
+  type: string;
+}
+
+/** Relationship reference within a graph path */
+export interface GraphPathRelationship {
+  /** Relationship identifier */
+  relationship_id: string;
+  /** Relationship type label */
+  type: string;
+}
+
+/** A single traversal path in the graph query result */
+export interface GraphPath {
+  /** Depth of this path from the starting entity */
+  depth: number;
+  /** Entities along this path */
+  entities: GraphPathEntity[];
+  /** Relationships along this path */
+  relationships: GraphPathRelationship[];
+}
+
+/**
+ * Response from a graph query operation.
+ */
+export interface GraphQueryResponse {
+  /** The starting entity (null if not found) */
+  start_entity: GraphPathEntity | null;
+  /** Traversal paths from the starting entity */
+  paths: GraphPath[];
+  /** Total number of paths found */
+  total_paths: number;
 }

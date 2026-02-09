@@ -1,21 +1,15 @@
 # @nexus/sdk
 
-> Nexus AI Cognitive Services JavaScript SDK
-
-[![npm version](https://badge.fury.io/js/%40nexus%2Fsdk.svg)](https://www.npmjs.com/package/@nexus/sdk)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-TypeScript/JavaScript SDK for [Nexus AI Cognitive Services Platform](https://forgejo.10cg.pub/10CG/nexus).
+Official Node.js SDK for the Nexus AI Cognitive Services Platform.
 
 ## Features
 
-- 🧠 **Memory Service** - Long-term memory with semantic search
-- 💬 **Conversation Service** - Chat history with auto-summary
-- 🔄 **Context Service** - Aggregated context retrieval (Chat main flow)
-- 🕸️ **Knowledge Service** - Knowledge graph construction and query
-- 🎯 **Type-safe** - Full TypeScript support with 100% type coverage
-- 🌐 **Universal** - Works in browser and Node.js 18+
-- 📦 **Zero deps** - No runtime dependencies, uses native fetch
+- **6 Services** -- Context, Memory, Conversation, Knowledge, Activity, Tenant
+- **TypeScript-first** -- Full type definitions for all requests and responses
+- **LRU Caching** -- Configurable in-memory cache with TTL for read endpoints
+- **Auto Retry** -- Exponential back-off with configurable limits
+- **Offline Queue** -- Queues requests when the network is unavailable
+- **Error Hierarchy** -- Typed error classes mapped to HTTP status codes
 
 ## Installation
 
@@ -28,208 +22,255 @@ npm install @nexus/sdk
 ```typescript
 import { NexusClient } from '@nexus/sdk';
 
-const client = new NexusClient({
-  apiKey: 'nx_live_your_api_key_here',
-  baseURL: 'https://api.nexus.10cg.pub/v1'
+const nexus = new NexusClient({
+  apiKey: process.env.NEXUS_API_KEY!,
 });
 
-// Create a memory
-const memory = await client.memories.create({
-  content: 'User prefers dark mode',
-  user_id: 'user_123'
-});
-
-// Search memories
-const results = await client.memories.search({
-  query: 'preferences',
-  user_id: 'user_123',
-  limit: 5
-});
-
-// Retrieve aggregated context (Chat main flow)
-const context = await client.context.retrieve({
-  user_id: 'user_123',
-  query: 'User work habits and preferences',
-  options: {
-    memory_limit: 10,
-    history_limit: 5
-  }
-});
-```
-
-## Services
-
-### Memory Service
-
-Manage user memories with semantic search.
-
-```typescript
-// Create a memory
-const memory = await client.memories.create({
-  content: 'User likes blue',
-  user_id: 'user_123',
-  memory_type: 'semantic'
-});
-
-// Search memories
-const results = await client.memories.search({
-  query: 'color preferences',
-  user_id: 'user_123',
-  threshold: 0.7
-});
-
-// Get a memory
-const memory = await client.memories.get('memory_id');
-
-// Delete a memory
-await client.memories.delete('memory_id');
-```
-
-### Conversation Service
-
-Manage chat conversations and messages.
-
-```typescript
-// Create a conversation
-const conversation = await client.conversations.create({
-  user_id: 'user_123',
-  session_id: 'session_abc'
-});
-
-// Add a message
-const message = await client.conversations.addMessage(conversation.id, {
-  role: 'user',
-  content: 'Hello!'
-});
-
-// Get messages
-const messages = await client.conversations.getMessages(conversation.id);
-
-// Get summary
-const summary = await client.conversations.getSummary(conversation.id);
-```
-
-### Context Service (Main Chat Flow)
-
-Retrieve aggregated context in a single call.
-
-```typescript
-const context = await client.context.retrieve({
-  user_id: 'user_123',
+// Aggregated context retrieval (Chat main flow)
+const context = await nexus.context.retrieve({
+  user_id: 'user_42',
   query: 'What are the user preferences?',
-  options: {
-    memory_limit: 10,
-    history_limit: 5,
-    include_graph: true
-  }
+  layers: ['recent', 'semantic', 'graph'],
 });
 
-// Access aggregated data
-console.log(context.profile?.memories);   // User memories
-console.log(context.history?.messages);   // Conversation history
-console.log(context.graph?.entities);    // Knowledge graph entities
-```
-
-### Knowledge Service
-
-Knowledge graph extraction and query.
-
-```typescript
-// Extract entities and relationships
-const result = await client.knowledge.extract({
-  text: '张三是李四的上司',
-  owner_id: 'user_123'
+// Semantic memory search
+const results = await nexus.memories.search({
+  user_id: 'user_42',
+  query: 'UI preferences',
 });
 
-console.log(result.entities);        // 张三, 李四
-console.log(result.relationships);  // 张三 -> 上司 -> 李四
-
-// Query knowledge graph
-const answer = await client.knowledge.query({
-  query: '谁是我的上司？',
-  user_id: 'user_123'
+// Log an activity
+await nexus.activities.log({
+  action: 'edit_file',
+  activity_data: { path: 'src/index.ts', lines_changed: 12 },
 });
-
-console.log(answer.answer);  // "张三是您的上司"
-```
-
-## Error Handling
-
-```typescript
-import {
-  NexusError,
-  ValidationError,
-  AuthenticationError,
-  QuotaExceededError,
-  NotFoundError
-} from '@nexus/sdk';
-
-try {
-  await client.memories.create({ ... });
-} catch (error) {
-  if (error instanceof ValidationError) {
-    console.log('Validation failed:', error.message, error.details);
-  } else if (error instanceof AuthenticationError) {
-    console.log('Invalid API key');
-  } else if (error instanceof QuotaExceededError) {
-    console.log('Quota exceeded:', error.details);
-  } else if (error instanceof NexusError) {
-    console.log(`Error: ${error.code} - ${error.message}`);
-  }
-}
 ```
 
 ## Configuration
 
 ```typescript
-const client = new NexusClient({
-  apiKey: 'nx_live_...',     // Required: API key
-  baseURL: '...',             // Optional: API base URL
-  timeout: 30000,             // Optional: Request timeout (ms)
-  maxRetries: 3               // Optional: Max retry attempts
+const nexus = new NexusClient({
+  // Required
+  apiKey: 'nx_live_...',
+
+  // Optional (defaults shown)
+  baseUrl: 'http://localhost:8001/v1',
+  tenantId: 'my-tenant',       // Multi-tenant isolation header
+  timeout: 30_000,             // Request timeout in ms
+
+  // Cache -- pass false to disable
+  cache: {
+    max: 1000,                 // Max LRU entries
+    ttl: 300,                  // TTL in seconds (5 min)
+  },
+
+  // Retry -- pass false to disable
+  retry: {
+    maxRetries: 3,             // Retry attempts (excluding initial)
+    initialDelay: 1000,        // First retry delay in ms
+    maxDelay: 10_000,          // Upper bound for delay in ms
+    backoffFactor: 2,          // Multiplier per attempt
+  },
 });
 ```
 
-## Examples
+## API Reference
 
-- [Node.js Script](./examples/nodejs-script/) - Example CLI usage
+### Context Service
 
-## Browser Support
+The primary entry point for Chat main flows. Fetches user profile, conversation history, and knowledge graph data in a single call.
 
-| Browser | Version |
-|---------|---------|
-| Chrome | 90+ |
-| Firefox | 88+ |
-| Safari | 14+ |
-| Edge | 90+ |
-| Node.js | 18+ |
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Build
-npm run build
-
-# Run tests
-npm run test
-
-# Watch mode
-npm run dev
-
-# Type check
-npm run typecheck
+```typescript
+const ctx = await nexus.context.retrieve({
+  user_id: 'user_42',
+  query: 'project status',
+  layers: ['recent', 'semantic', 'graph'],
+});
 ```
+
+| Method | Description |
+|--------|-------------|
+| `retrieve(request)` | Aggregated context retrieval across memory, conversation, and knowledge layers |
+
+### Memory Service
+
+Long-term memory management powered by Mem0. Supports CRUD, semantic search, and the Memory Journal view.
+
+```typescript
+const memory = await nexus.memories.create({
+  user_id: 'user_42',
+  content: 'User prefers dark mode',
+  memory_type: 'semantic',
+});
+
+const results = await nexus.memories.search({
+  user_id: 'user_42',
+  query: 'UI preferences',
+});
+```
+
+| Method | Description |
+|--------|-------------|
+| `create(data)` | Create a new memory record |
+| `list(params?)` | List memories with optional filtering and pagination |
+| `get(memoryId)` | Retrieve a single memory by ID |
+| `update(memoryId, data)` | Partial update of a memory record |
+| `delete(memoryId)` | Delete a memory record |
+| `search(request)` | Semantic similarity search across memories |
+| `journal(params?)` | Chronological Memory Journal view (markdown or JSON) |
+
+### Conversation Service
+
+Conversation history and auto-summary management powered by Zep OSS.
+
+```typescript
+const conv = await nexus.conversations.create({
+  user_id: 'user_42',
+  metadata: { topic: 'project planning' },
+});
+
+await nexus.conversations.addMessage(conv.id, {
+  role: 'user',
+  content: 'Let us discuss the roadmap.',
+});
+
+const summary = await nexus.conversations.getSummary(conv.id);
+```
+
+| Method | Description |
+|--------|-------------|
+| `create(data)` | Create a new conversation session |
+| `list(params?)` | List conversations with optional filtering |
+| `get(conversationId)` | Retrieve a conversation with messages |
+| `addMessage(conversationId, message)` | Add a message to a conversation |
+| `getMessages(conversationId, params?)` | List messages within a conversation |
+| `getSummary(conversationId)` | Get auto-generated conversation summary |
+| `delete(conversationId)` | Delete a conversation and all its messages |
+
+### Knowledge Service
+
+Knowledge graph construction and query powered by Fast GraphRAG.
+
+```typescript
+const extraction = await nexus.knowledge.extract({
+  text: 'Alice works at Acme Corp on the Phoenix project.',
+  owner_user_id: 'user_42',
+});
+
+const graph = await nexus.knowledge.query({
+  entity_name: 'Alice',
+  depth: 2,
+});
+```
+
+| Method | Description |
+|--------|-------------|
+| `createEntity(data)` | Create a new entity in the knowledge graph |
+| `listEntities(params?)` | List entities with optional filtering |
+| `query(request)` | BFS graph traversal from a named entity |
+| `extract(request)` | Extract entities and relationships from text |
+
+### Activity Service
+
+Activity stream ingestion for passive memory collection.
+
+```typescript
+await nexus.activities.log({
+  action: 'edit_file',
+  activity_data: { path: 'src/app.ts', lines_changed: 42 },
+});
+
+await nexus.activities.stream({
+  agent_id: 'cursor-agent',
+  activities: [
+    { action: 'read_file', activity_data: { path: 'README.md' } },
+    { action: 'run_test', activity_data: { suite: 'unit', passed: true } },
+  ],
+});
+```
+
+| Method | Description |
+|--------|-------------|
+| `stream(request)` | Batch-ingest up to 1000 activities |
+| `log(activity, agentId?)` | Convenience method to log a single activity |
+
+### Tenant Service
+
+Tenant profile and usage management. Identity is derived from the API key.
+
+```typescript
+const tenant = await nexus.tenants.me();
+console.log(tenant.name, tenant.tier);
+
+const usage = await nexus.tenants.usage();
+console.log('Memories:', usage.memories_count);
+```
+
+| Method | Description |
+|--------|-------------|
+| `me()` | Retrieve the current tenant profile |
+| `usage()` | Retrieve resource usage statistics |
+
+## Error Handling
+
+All SDK errors extend `NexusError` and carry a machine-readable `code` field.
+
+```
+NexusError (base)
+  +-- ConfigurationError    -- Invalid SDK options
+  +-- NetworkError          -- Connection failures
+  +-- TimeoutError          -- Request timeout exceeded
+  +-- ApiError              -- HTTP API errors (has statusCode)
+        +-- AuthenticationError  -- 401
+        +-- ValidationError      -- 400 (has details)
+        +-- NotFoundError        -- 404
+        +-- RateLimitError       -- 429 (has retryAfter)
+```
+
+```typescript
+import { ApiError, RateLimitError, NotFoundError } from '@nexus/sdk';
+
+try {
+  await nexus.memories.get('non-existent-id');
+} catch (err) {
+  if (err instanceof NotFoundError) {
+    console.log('Memory not found');
+  } else if (err instanceof RateLimitError) {
+    console.log(`Rate limited. Retry after ${err.retryAfter}s`);
+  } else if (err instanceof ApiError) {
+    console.log(`API error ${err.statusCode}: ${err.message}`);
+  }
+}
+```
+
+## Caching
+
+The SDK includes an LRU cache that automatically caches responses from read endpoints:
+
+- All `GET` requests (list, get operations)
+- Read-oriented `POST` endpoints: `/context/retrieve`, `/memories/search`, `/knowledge/query`
+
+Write operations (`POST`, `PATCH`, `DELETE`) automatically invalidate related cache entries by path prefix, ensuring read-after-write consistency.
+
+```typescript
+// Disable caching entirely
+const nexus = new NexusClient({
+  apiKey: 'nx_live_...',
+  cache: false,
+});
+
+// Custom cache settings
+const nexus2 = new NexusClient({
+  apiKey: 'nx_live_...',
+  cache: { max: 500, ttl: 120 },
+});
+```
+
+## Requirements
+
+- Node.js >= 18.0.0
+- TypeScript >= 5.0 (recommended)
 
 ## License
 
-MIT © 10CG Team
-
-## Links
-
-- [Documentation](https://nexus.10cg.pub)
-- [API Reference](https://nexus.10cg.pub/docs)
-- [Repository](https://forgejo.10cg.pub/10CG/nexus-sdk-js)
-- [Issue Tracker](https://forgejo.10cg.pub/10CG/nexus-sdk-js/issues)
+MIT

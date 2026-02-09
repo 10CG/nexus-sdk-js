@@ -1,179 +1,325 @@
 /**
- * Context Service types
+ * @nexus/sdk - Context Types
+ *
+ * Type definitions for the Context Service - the core aggregated context
+ * retrieval API used in Chat main flows.
+ *
+ * Supports both v1.1 legacy ContextRetrieve and v2.0 DX Enhanced
+ * temporal-anchored multi-layer retrieval.
+ *
+ * Based on Nexus API v2.0 OpenAPI specification.
  */
+
+// ============== Context Layers (v2.0 DX Enhancement) ==============
 
 /**
- * Context retrieval options
+ * Available context retrieval layers for multi-layer parallel retrieval.
+ * - "recent": Time-anchored activities from the activity stream
+ * - "semantic": Vector similarity search against memory store (Mem0)
+ * - "graph": Knowledge graph traversal (Fast GraphRAG)
  */
-export interface ContextRetrieveOptions {
-  /** Maximum memories to retrieve */
-  memory_limit?: number;
+export type ContextLayer = 'recent' | 'semantic' | 'graph';
 
-  /** Filter by memory types */
-  memory_types?: string[];
+// ============== Context Request (v2.0 DX Enhanced) ==============
 
-  /** Minimum similarity threshold */
-  memory_threshold?: number;
-
-  /** Maximum messages to retrieve */
+/**
+ * Request payload for the v2.0 DX Enhanced context retrieval endpoint.
+ * Supports multi-layer parallel retrieval with temporal anchoring (US-014).
+ *
+ * POST /context/retrieve
+ */
+export interface ContextRequest {
+  /** User ID within the tenant (Nexus auto-prefixes tenant ID) */
+  user_id: string;
+  /** Optional semantic query text (used for the semantic layer) */
+  query?: string;
+  /**
+   * Context layers to retrieve in parallel.
+   * @default ["semantic", "graph"]
+   */
+  layers?: ContextLayer[];
+  /**
+   * Time window for the recent layer in hours.
+   * @default 4
+   */
+  recent_hours?: number;
+  /**
+   * Maximum number of recent activities to return.
+   * @default 10
+   */
+  recent_limit?: number;
+  /**
+   * Whether to include memory profile (semantic layer).
+   * @default true
+   */
+  include_profile?: boolean;
+  /**
+   * Maximum number of profile memories to return.
+   * @default 5
+   */
+  profile_limit?: number;
+  /**
+   * Whether to include conversation history.
+   * @default true
+   */
+  include_history?: boolean;
+  /**
+   * Maximum number of conversation history messages to return.
+   * @default 10
+   */
   history_limit?: number;
-
-  /** Include knowledge graph */
+  /**
+   * Whether to include knowledge graph entities (graph layer).
+   * @default true
+   */
   include_graph?: boolean;
+  /**
+   * Maximum number of knowledge graph entities to return.
+   * @default 5
+   */
+  graph_limit?: number;
+}
 
-  /** Graph traversal depth */
+// ============== Context Retrieve (v1.1 Legacy) ==============
+
+/** Options for the v1.1 legacy context retrieve operation. */
+export interface ContextRetrieveOptions {
+  /** Maximum number of memories to return. @default 5 */
+  memory_limit?: number;
+  /** Filter by memory types */
+  memory_types?: MemoryTypeFilter[];
+  /** Minimum similarity threshold for memory retrieval. @default 0.7 */
+  memory_threshold?: number;
+  /** Maximum number of history messages to return. @default 10 */
+  history_limit?: number;
+  /** Whether to include knowledge graph query results. @default true */
+  include_graph?: boolean;
+  /** Graph traversal depth. @default 2 */
   graph_depth?: number;
 }
 
+/** Memory type filter values */
+export type MemoryTypeFilter = 'episodic' | 'semantic' | 'procedural';
+
 /**
- * Context retrieval request
+ * Request payload for the v1.1 legacy context retrieve endpoint.
+ * POST /context/retrieve
  */
-export interface ContextRetrieveDto {
-  /** User ID */
+export interface ContextRetrieveRequest {
+  /** User ID within the tenant (Nexus auto-prefixes tenant ID) */
   user_id: string;
-
-  /** Session ID */
-  session_id?: string;
-
-  /** Agent ID */
-  agent_id?: string;
-
-  /** Query for context retrieval */
+  /** Semantic search query text */
   query: string;
-
+  /** Optional session ID for conversation context */
+  session_id?: string;
+  /** Optional Agent ID for filtering agent-specific knowledge */
+  agent_id?: string;
   /** Retrieval options */
   options?: ContextRetrieveOptions;
 }
 
+// ============== Context Response Sub-types ==============
+
 /**
- * Context memory profile
+ * A single memory item within the context profile.
+ * Sourced from Mem0 memory store.
+ */
+export interface ContextMemory {
+  /** Unique memory identifier (UUID) */
+  id: string;
+  /** Memory content text */
+  content: string;
+  /** Type of memory */
+  memory_type: 'episodic' | 'semantic' | 'procedural';
+  /** Relevance score from similarity search */
+  score?: number;
+  /** Timestamp when the memory was created (ISO 8601) */
+  created_at: string;
+}
+
+/**
+ * User profile memories section of the context response.
+ * Contains memories retrieved from Mem0.
  */
 export interface ContextProfile {
-  /** Retrieved memories */
+  /** List of relevant memories */
   memories: ContextMemory[];
-
-  /** Total memory count */
+  /** Total number of memories the user has */
   total_count: number;
 }
 
-/**
- * Context memory
- */
-export interface ContextMemory {
-  /** Memory ID */
-  id: string;
-
-  /** Memory content */
-  content: string;
-
-  /** Memory type */
-  memory_type: string;
-
-  /** Similarity score */
-  score?: number;
-
-  /** Creation timestamp */
-  created_at: Date;
-}
-
-/**
- * Context conversation history
- */
-export interface ContextHistory {
-  /** Conversation messages */
-  messages: ContextMessage[];
-
-  /** Conversation summary (if available) */
-  summary?: string;
-
-  /** Session ID */
-  session_id: string;
-
-  /** Conversation ID */
-  conversation_id?: string;
-}
-
-/**
- * Context message
- */
+/** A single message within conversation history. */
 export interface ContextMessage {
   /** Message role */
-  role: string;
-
-  /** Message content */
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  /** Message content text */
   content: string;
-
-  /** Creation timestamp */
-  created_at: Date;
+  /** Timestamp when the message was created (ISO 8601) */
+  created_at: string;
 }
 
 /**
- * Context knowledge graph
+ * Conversation history section of the context response.
+ * Sourced from Zep conversation store.
+ */
+export interface ContextHistory {
+  /** List of recent messages */
+  messages: ContextMessage[];
+  /** Auto-generated conversation summary (if available) */
+  summary?: string;
+  /** Session identifier */
+  session_id?: string;
+}
+
+/** Entity ownership type in the knowledge graph */
+export type OwnerType = 'agent' | 'user';
+
+/**
+ * A knowledge entity within the graph context.
+ * Sourced from Fast GraphRAG.
+ */
+export interface ContextEntity {
+  /** Unique entity identifier (UUID) */
+  id: string;
+  /** Entity display name */
+  name: string;
+  /** Entity type classification (e.g., Person, Organization) */
+  entity_type: string;
+  /** Entity description */
+  description?: string;
+  /** Additional entity properties */
+  properties?: Record<string, unknown>;
+  /** Ownership type: agent=public knowledge, user=private social graph */
+  owner_type?: OwnerType;
+}
+
+/** A relationship between two entities in the knowledge graph. */
+export interface ContextRelation {
+  /** Source entity name */
+  source: string;
+  /** Relationship type label */
+  relation: string;
+  /** Target entity name */
+  target: string;
+  /** Relationship weight/strength */
+  weight?: number;
+}
+
+/**
+ * Knowledge graph section of the context response.
+ * Sourced from Fast GraphRAG.
  */
 export interface ContextGraph {
-  /** Graph entities */
+  /** List of relevant entities */
   entities: ContextEntity[];
-
-  /** Graph relationships */
+  /** List of relationships between entities */
   relations: ContextRelation[];
 }
 
 /**
- * Context entity
+ * Retrieval performance metadata.
+ * Provides timing information for each retrieval layer.
  */
-export interface ContextEntity {
-  /** Entity ID */
-  id: string;
-
-  /** Entity name */
-  name: string;
-
-  /** Entity type */
-  entity_type: string;
-
-  /** Entity description */
-  description?: string;
-
-  /** Entity properties */
-  properties?: Record<string, unknown>;
+export interface ContextMeta {
+  /** Total retrieval time in milliseconds */
+  took_ms: number;
+  /** Memory retrieval time in milliseconds */
+  memory_took_ms?: number;
+  /** History retrieval time in milliseconds */
+  history_took_ms?: number;
+  /** Graph retrieval time in milliseconds */
+  graph_took_ms?: number;
+  /** Original query text */
+  query?: string;
 }
 
-/**
- * Context relationship
- */
-export interface ContextRelation {
-  /** Source entity ID */
-  source: string;
-
-  /** Target entity ID */
-  target: string;
-
-  /** Relation type */
-  relation_type: string;
-
-  /** Relation properties */
-  properties?: Record<string, unknown>;
-}
+// ============== Context Retrieve Response ==============
 
 /**
- * Context retrieval response
+ * Aggregated context response from the retrieve endpoint.
+ * Contains parallel-fetched results from all requested layers.
  */
 export interface ContextRetrieveResponse {
-  /** User memory profile */
+  /** User profile memories from Mem0 */
   profile?: ContextProfile;
-
-  /** Conversation history */
+  /** Conversation history from Zep */
   history?: ContextHistory;
-
-  /** Knowledge graph */
+  /** Knowledge graph data from GraphRAG */
   graph?: ContextGraph;
+  /** Retrieval performance metadata */
+  meta?: ContextMeta;
+}
 
-  /** Response metadata */
-  meta?: {
-    /** Retrieval time in milliseconds */
-    retrieval_time_ms: number;
+// ============== Legacy Context Response (Python schema compat) ==============
 
-    /** Data sources included */
-    sources: string[];
-  };
+/**
+ * Profile memory item in the legacy context response format.
+ * Matches the Python ProfileMemory schema.
+ */
+export interface ProfileMemory {
+  /** Memory identifier */
+  memory_id: string;
+  /** Memory content text */
+  content: string;
+  /** Type of memory */
+  memory_type: string;
+  /** Memory category */
+  category?: string;
+  /** Similarity score from vector search */
+  similarity_score?: number;
+  /** Additional metadata */
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Conversation message in the legacy context response format.
+ * Matches the Python ConversationMessage schema.
+ */
+export interface ConversationMessage {
+  /** Message identifier */
+  message_id: string;
+  /** Message role */
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  /** Message content text */
+  content: string;
+  /** Timestamp when the message was created (ISO 8601) */
+  created_at: string;
+  /** Additional metadata */
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Knowledge entity in the legacy context response format.
+ * Matches the Python KnowledgeEntity schema.
+ */
+export interface KnowledgeEntity {
+  /** Entity identifier */
+  entity_id: string;
+  /** Entity display name */
+  name: string;
+  /** Entity type classification */
+  type: string;
+  /** Entity description */
+  description?: string;
+  /** Related entity relationships */
+  relationships?: Array<Record<string, unknown>>;
+}
+
+/**
+ * Legacy aggregated context response.
+ * Matches the Python ContextResponse schema.
+ */
+export interface ContextResponse {
+  /** Memory profile items */
+  profile?: ProfileMemory[];
+  /** Conversation history messages */
+  history?: ConversationMessage[];
+  /** Knowledge graph entities */
+  graph?: KnowledgeEntity[];
+  /** Timestamp when the context was retrieved (ISO 8601) */
+  retrieved_at: string;
+  /** Total retrieval time in milliseconds */
+  total_latency_ms: number;
+  /** Partial failure errors keyed by service name */
+  errors?: Record<string, string>;
 }

@@ -1,107 +1,152 @@
 /**
- * Conversation Service types
+ * @nexus/sdk - Conversation Types
+ *
+ * Type definitions for the Conversation Service powered by Zep OSS.
+ * Manages conversation history, messages, and auto-generated summaries.
+ *
+ * Based on Nexus API v2.0 OpenAPI specification.
  */
 
-import type { PaginationOptions } from './common';
+// ============== Message Role ==============
 
-/**
- * Message role types
- */
+/** Valid message roles in a conversation */
 export type MessageRole = 'user' | 'assistant' | 'system' | 'tool';
 
+/** Conversation status */
+export type ConversationStatus = 'active' | 'archived' | 'deleted';
+
+// ============== Conversation ==============
+
 /**
- * Conversation object
+ * A conversation session between a user and an AI agent.
+ * Managed by Zep OSS for temporal graph and auto-summary.
  */
 export interface Conversation {
-  /** Conversation ID (UUID) */
+  /** Unique conversation identifier (UUID) */
   id: string;
-
-  /** User ID */
+  /** User ID that owns this conversation */
   user_id: string;
-
-  /** Session ID for grouping conversations */
+  /** Session identifier for the conversation */
   session_id?: string;
-
-  /** Agent ID (if created by an agent) */
-  agent_id?: string;
-
-  /** Additional metadata */
+  /** Auto-generated conversation summary */
+  summary?: string;
+  /** Total number of messages in the conversation */
+  message_count: number;
+  /** Additional metadata key-value pairs */
   metadata?: Record<string, unknown>;
-
-  /** Creation timestamp */
-  created_at: Date;
-
-  /** Last update timestamp */
-  updated_at: Date;
+  /** Timestamp when the conversation was created (ISO 8601) */
+  created_at: string;
+  /** Timestamp when the conversation was last updated (ISO 8601) */
+  updated_at: string;
 }
 
 /**
- * Message object
+ * Request payload for creating a new conversation.
+ *
+ * POST /conversations
+ */
+export interface ConversationCreate {
+  /** User ID to associate the conversation with */
+  user_id: string;
+  /** Custom session ID (auto-generated if not provided) */
+  session_id?: string;
+  /** Additional metadata key-value pairs */
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Conversation with its messages included.
+ * Returned when include_messages=true.
+ */
+export interface ConversationDetail extends Conversation {
+  /** Messages in the conversation */
+  messages: Message[];
+}
+
+// ============== Message ==============
+
+/**
+ * A single message within a conversation.
  */
 export interface Message {
-  /** Message ID (UUID) */
+  /** Unique message identifier (UUID) */
   id: string;
+  /** Message role (user, assistant, system, or tool) */
+  role: MessageRole;
+  /** Message content text */
+  content: string;
+  /** Additional metadata key-value pairs */
+  metadata?: Record<string, unknown>;
+  /** Message sequence number within the conversation */
+  sequence?: number;
+  /** Timestamp when the message was created (ISO 8601) */
+  created_at: string;
+}
 
-  /** Conversation ID */
-  conversation_id: string;
-
+/**
+ * Request payload for adding a message to a conversation.
+ *
+ * POST /conversations/:conversation_id/messages
+ */
+export interface MessageCreate {
   /** Message role */
   role: MessageRole;
-
-  /** Message content */
+  /** Message content text (1-50000 characters) */
   content: string;
-
-  /** Additional metadata */
+  /** Additional metadata key-value pairs */
   metadata?: Record<string, unknown>;
-
-  /** Creation timestamp */
-  created_at: Date;
 }
 
+// ============== Conversation List ==============
+
 /**
- * Create conversation DTO
+ * Paginated list of conversations.
+ *
+ * GET /conversations?user_id=...
  */
-export interface CreateConversationDto {
-  /** User ID */
-  user_id: string;
-
-  /** Session ID */
-  session_id?: string;
-
-  /** Agent ID */
-  agent_id?: string;
-
-  /** Additional metadata */
-  metadata?: Record<string, unknown>;
+export interface ConversationList {
+  /** Array of conversation records */
+  data: Conversation[];
+  /** Pagination metadata */
+  pagination: {
+    /** Total number of conversations */
+    total: number;
+    /** Current page size limit */
+    limit: number;
+    /** Current offset */
+    offset: number;
+    /** Whether more results exist */
+    has_more: boolean;
+  };
 }
 
 /**
- * Add message DTO
+ * Paginated list of messages within a conversation.
+ *
+ * GET /conversations/:conversation_id/messages
  */
-export interface AddMessageDto {
-  /** Message role */
-  role: MessageRole;
-
-  /** Message content */
-  content: string;
-
-  /** Additional metadata */
-  metadata?: Record<string, unknown>;
+export interface MessageList {
+  /** Array of message records */
+  data: Message[];
+  /** Whether more messages exist before the current page */
+  has_more: boolean;
 }
 
+// ============== Conversation Summary ==============
+
 /**
- * Conversation summary
+ * Auto-generated summary of a conversation.
+ * Generated by Zep OSS temporal graph analysis.
+ *
+ * GET /conversations/:conversation_id/summary
  */
 export interface ConversationSummary {
-  /** Conversation ID */
+  /** Conversation identifier (UUID) */
   conversation_id: string;
-
-  /** Summary text */
-  summary: string;
-
-  /** Message count used for summary */
-  message_count: number;
-
-  /** Generation timestamp */
-  generated_at: Date;
+  /** Generated summary text */
+  summary?: string;
+  /** Key points extracted from the conversation */
+  key_points?: string[];
+  /** Timestamp when the summary was generated (ISO 8601) */
+  generated_at: string;
 }

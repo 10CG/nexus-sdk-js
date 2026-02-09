@@ -1,147 +1,86 @@
 /**
- * Nexus SDK Main Client
- */
-
-import { HttpClient } from './http';
-import { MemoryService } from './services/memory';
-import { ConversationService } from './services/conversation';
-import { ContextService } from './services/context';
-import { KnowledgeService } from './services/knowledge';
-import type { NexusClientConfig } from './types';
-
-/**
- * Tenant information
- */
-export interface TenantInfo {
-  /** Tenant ID */
-  tenant_id: string;
-
-  /** Tenant name */
-  name: string;
-
-  /** Quota limit */
-  quota_limit: number;
-
-  /** Quota used */
-  quota_used: number;
-
-  /** Quota remaining */
-  quota_remaining: number;
-
-  /** Tenant status */
-  status: string;
-}
-
-/**
- * Usage statistics
- */
-export interface UsageStats {
-  /** Total API calls in period */
-  api_calls: number;
-
-  /** Success rate */
-  success_rate: number;
-
-  /** Average latency in ms */
-  avg_latency_ms: number;
-
-  /** Period */
-  period: 'day' | 'week' | 'month';
-}
-
-/**
- * Nexus SDK Client
+ * @module client
+ * @description Main entry point for the Nexus SDK.
  *
- * Main entry point for the SDK. Provides access to all services.
+ * The {@link NexusClient} class is the single object that SDK consumers
+ * instantiate.  It resolves configuration, creates a shared HTTP transport,
+ * and exposes every domain service as a readonly property.
+ */
+
+import { resolveConfig } from './config';
+import type { NexusConfig } from './config';
+import { HttpClient } from './http';
+import { ContextService } from './services/context';
+import { MemoryService } from './services/memories';
+import { ConversationService } from './services/conversations';
+import { KnowledgeService } from './services/knowledge';
+import { ActivityService } from './services/activities';
+import { TenantService } from './services/tenants';
+
+/**
+ * Nexus AI Cognitive Services SDK client.
+ *
+ * Create a single instance and use the service properties to interact
+ * with the Nexus platform.
  *
  * @example
- * ```ts
- * import { NexusClient } from '@nexus/sdk';
- *
- * const client = new NexusClient({
- *   apiKey: 'nx_live_your_api_key_here',
- *   baseURL: 'https://api.nexus.10cg.pub/v1'
+ * ```typescript
+ * const nexus = new NexusClient({
+ *   apiKey: process.env.NEXUS_API_KEY!,
  * });
  *
- * // Access services
- * const memory = await client.memories.create({
- *   content: 'User prefers dark mode',
- *   user_id: 'user_123'
+ * // Aggregated context retrieval (Chat main flow)
+ * const ctx = await nexus.context.retrieve({
+ *   user_id: 'user123',
+ *   query: '用户偏好',
  * });
  *
- * const context = await client.context.retrieve({
- *   user_id: 'user_123',
- *   query: 'User preferences'
+ * // Memory search
+ * const memories = await nexus.memories.search({
+ *   user_id: 'user123',
+ *   query: 'favourite colour',
  * });
  * ```
  */
 export class NexusClient {
+  /** Aggregated context retrieval (Chat main flow). */
+  public readonly context: ContextService;
+
+  /** Memory CRUD, search, and journal. */
+  public readonly memories: MemoryService;
+
+  /** Conversation lifecycle and messages. */
+  public readonly conversations: ConversationService;
+
+  /** Knowledge graph entities and queries. */
+  public readonly knowledge: KnowledgeService;
+
+  /** Activity stream ingestion for passive memory. */
+  public readonly activities: ActivityService;
+
+  /** Tenant profile and usage management. */
+  public readonly tenants: TenantService;
+
+  /** @internal Shared HTTP transport. */
   private readonly http: HttpClient;
 
   /**
-   * Memory Service - Manages user memories and preferences
-   */
-  public readonly memories: MemoryService;
-
-  /**
-   * Conversation Service - Manages conversations and messages
-   */
-  public readonly conversations: ConversationService;
-
-  /**
-   * Context Service - Aggregates profile, history, and knowledge
+   * Create a new Nexus SDK client.
    *
-   * This is the main Chat flow API - retrieves all relevant context
-   * in a single call.
+   * @param config - SDK configuration. Only `apiKey` is required; all other
+   *   fields fall back to sensible defaults (see {@link resolveConfig}).
+   *
+   * @throws {Error} If `apiKey` is missing or empty.
    */
-  public readonly context: ContextService;
+  constructor(config: NexusConfig) {
+    const resolved = resolveConfig(config);
+    this.http = new HttpClient(resolved);
 
-  /**
-   * Knowledge Service - Manages knowledge graph
-   */
-  public readonly knowledge: KnowledgeService;
-
-  /**
-   * Create a new Nexus client
-   * @param config - Client configuration
-   */
-  constructor(config: NexusClientConfig) {
-    this.http = new HttpClient(config);
-
-    // Initialize services
+    this.context = new ContextService(this.http);
     this.memories = new MemoryService(this.http);
     this.conversations = new ConversationService(this.http);
-    this.context = new ContextService(this.http);
     this.knowledge = new KnowledgeService(this.http);
-  }
-
-  /**
-   * Get tenant information
-   * @returns Tenant info including quota usage
-   * @example
-   * ```ts
-   * const tenant = await client.getTenant();
-   * console.log(tenant.name);
-   * console.log(tenant.quota_remaining);
-   * ```
-   */
-  async getTenant(): Promise<TenantInfo> {
-    return this.http.get<TenantInfo>('/tenant');
-  }
-
-  /**
-   * Get usage statistics
-   * @param period - Time period for stats
-   * @returns Usage statistics
-   * @example
-   * ```ts
-   * const stats = await client.getUsage('day');
-   * console.log(stats.api_calls);
-   * ```
-   */
-  async getUsage(
-    period: 'day' | 'week' | 'month' = 'day',
-  ): Promise<UsageStats> {
-    return this.http.get<UsageStats>(`/tenant/usage?period=${period}`);
+    this.activities = new ActivityService(this.http);
+    this.tenants = new TenantService(this.http);
   }
 }
