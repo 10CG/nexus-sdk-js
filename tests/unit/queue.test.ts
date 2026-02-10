@@ -186,13 +186,17 @@ describe('OfflineQueue', () => {
       expect(queue.size).toBe(3);
     });
 
-    it('should return 0 after clear', () => {
-      queue.enqueue({ method: 'GET', path: '/a' });
-      queue.enqueue({ method: 'GET', path: '/b' });
+    it('should return 0 after clear', async () => {
+      const p1 = queue.enqueue({ method: 'GET', path: '/a' });
+      const p2 = queue.enqueue({ method: 'GET', path: '/b' });
 
       queue.clear();
 
       expect(queue.size).toBe(0);
+
+      // Ensure rejections are handled to avoid unhandled rejection
+      await expect(p1).rejects.toThrow();
+      await expect(p2).rejects.toThrow();
     });
 
     it('should return 0 after flush', async () => {
