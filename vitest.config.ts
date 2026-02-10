@@ -7,6 +7,12 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
+      exclude: [
+        "examples/**",
+        "src/index.ts",
+        "src/errors/index.ts",
+        "src/services/index.ts",
+      ],
     },
   },
 });
