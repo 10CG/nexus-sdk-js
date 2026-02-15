@@ -10,6 +10,7 @@
  */
 
 import { BaseService } from './base';
+import type { RequestOptions } from './base';
 import type {
   Conversation,
   ConversationCreate,
@@ -20,6 +21,8 @@ import type {
   MessageList,
   ConversationSummary,
 } from '../types/conversation';
+import { conversationCreateSchema, messageCreateSchema } from '../schemas/conversation';
+import { InputValidationError } from '../errors/validation';
 
 /**
  * Parameters for listing conversations with optional filtering and pagination.
@@ -77,8 +80,12 @@ export class ConversationService extends BaseService {
    * @param data - Conversation creation payload including user_id and optional metadata.
    * @returns The newly created conversation with generated ID and timestamps.
    */
-  async create(data: ConversationCreate): Promise<Conversation> {
-    return this.http.post<Conversation>('/conversations', data);
+  async create(data: ConversationCreate, options?: RequestOptions): Promise<Conversation> {
+    const parsed = conversationCreateSchema.safeParse(data);
+    if (!parsed.success) {
+      throw new InputValidationError(parsed.error);
+    }
+    return this.http.post<Conversation>('/conversations', data, options?.signal);
   }
 
   /**
@@ -87,8 +94,8 @@ export class ConversationService extends BaseService {
    * @param params - Optional filters for user_id and pagination controls.
    * @returns Paginated list of conversation records.
    */
-  async list(params?: ConversationListParams): Promise<ConversationList> {
-    return this.http.get<ConversationList>('/conversations', params as Record<string, unknown>);
+  async list(params?: ConversationListParams, options?: RequestOptions): Promise<ConversationList> {
+    return this.http.get<ConversationList>('/conversations', params as Record<string, unknown>, options?.signal);
   }
 
   /**
@@ -98,8 +105,8 @@ export class ConversationService extends BaseService {
    * @returns Conversation detail including the full message list.
    * @throws {ApiError} 404 if the conversation does not exist.
    */
-  async get(conversationId: string): Promise<ConversationDetail> {
-    return this.http.get<ConversationDetail>(`/conversations/${conversationId}`);
+  async get(conversationId: string, options?: RequestOptions): Promise<ConversationDetail> {
+    return this.http.get<ConversationDetail>(`/conversations/${conversationId}`, undefined, options?.signal);
   }
 
   /**
@@ -114,8 +121,12 @@ export class ConversationService extends BaseService {
    * @returns The newly created message with generated ID and sequence number.
    * @throws {ApiError} 404 if the conversation does not exist.
    */
-  async addMessage(conversationId: string, message: MessageCreate): Promise<Message> {
-    return this.http.post<Message>(`/conversations/${conversationId}/messages`, message);
+  async addMessage(conversationId: string, message: MessageCreate, options?: RequestOptions): Promise<Message> {
+    const parsed = messageCreateSchema.safeParse(message);
+    if (!parsed.success) {
+      throw new InputValidationError(parsed.error);
+    }
+    return this.http.post<Message>(`/conversations/${conversationId}/messages`, message, options?.signal);
   }
 
   /**
@@ -128,10 +139,11 @@ export class ConversationService extends BaseService {
    * @returns Paginated list of messages.
    * @throws {ApiError} 404 if the conversation does not exist.
    */
-  async getMessages(conversationId: string, params?: MessageListParams): Promise<MessageList> {
+  async getMessages(conversationId: string, params?: MessageListParams, options?: RequestOptions): Promise<MessageList> {
     return this.http.get<MessageList>(
       `/conversations/${conversationId}/messages`,
       params as Record<string, unknown>,
+      options?.signal,
     );
   }
 
@@ -145,8 +157,8 @@ export class ConversationService extends BaseService {
    * @returns The conversation summary with key points and generation timestamp.
    * @throws {ApiError} 404 if the conversation does not exist.
    */
-  async getSummary(conversationId: string): Promise<ConversationSummary> {
-    return this.http.get<ConversationSummary>(`/conversations/${conversationId}/summary`);
+  async getSummary(conversationId: string, options?: RequestOptions): Promise<ConversationSummary> {
+    return this.http.get<ConversationSummary>(`/conversations/${conversationId}/summary`, undefined, options?.signal);
   }
 
   /**
@@ -158,7 +170,7 @@ export class ConversationService extends BaseService {
    * @param conversationId - UUID of the conversation to delete.
    * @throws {ApiError} 404 if the conversation does not exist.
    */
-  async delete(conversationId: string): Promise<void> {
-    return this.http.delete<void>(`/conversations/${conversationId}`);
+  async delete(conversationId: string, options?: RequestOptions): Promise<void> {
+    return this.http.delete<void>(`/conversations/${conversationId}`, options?.signal);
   }
 }

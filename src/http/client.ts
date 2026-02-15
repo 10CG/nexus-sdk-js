@@ -14,10 +14,12 @@ import axios, {
 } from 'axios';
 
 import type { ResolvedConfig } from '../config';
+import type { OfflineConfig } from '../types/common';
 import { NetworkError, TimeoutError } from '../errors/base';
 import { ApiError } from '../errors/api';
 import { CacheManager, isCacheablePost } from './cache';
 import { RetryManager } from './retry';
+import { OfflineQueue } from './queue';
 
 /**
  * HTTP client that communicates with the Nexus API.
@@ -51,6 +53,12 @@ export class HttpClient {
   /** Retry manager for transient failures. */
   private readonly retry: RetryManager;
 
+  /** Offline request queue (only created when offline config is provided). */
+  private readonly offlineQueue?: OfflineQueue;
+
+  /** Whether the client is currently considered online. */
+  private _isOnline: boolean = true;
+
   /**
    * Create a new HTTP client.
    *
@@ -61,6 +69,10 @@ export class HttpClient {
     this.cache = new CacheManager(config.cache);
     this.retry = new RetryManager(config.retry);
 
+    if (config.offline?.enabled) {
+      this.offlineQueue = new OfflineQueue(config.offline.maxQueueSize ?? 100);
+    }
+
     this.axios = axios.create({
       baseURL: config.baseUrl,
       timeout: config.timeout,
@@ -68,6 +80,47 @@ export class HttpClient {
 
     this.setupRequestInterceptor();
     this.setupResponseInterceptor();
+  }
+
+  // -----------------------------------------------------------------------
+  // Offline queue support
+  // -----------------------------------------------------------------------
+
+  /**
+   * Set the online/offline status of the client.
+   *
+   * When transitioning from offline to online, the queued requests are
+   * automatically flushed.
+   *
+   * @param online - `true` if the client is online, `false` if offline.
+   */
+  setOnline(online: boolean): void {
+    const wasOffline = !this._isOnline;
+    this._isOnline = online;
+
+    if (wasOffline && online && this.offlineQueue) {
+      void this.offlineQueue.flush(async (req) => {
+        switch (req.method) {
+          case 'POST':
+            return this.post(req.path, req.data);
+          case 'PUT':
+            return this.put(req.path, req.data);
+          case 'PATCH':
+            return this.patch(req.path, req.data);
+          case 'DELETE':
+            return this.delete(req.path);
+          default:
+            return this.get(req.path);
+        }
+      });
+    }
+  }
+
+  /**
+   * Access the offline queue instance (if offline mode is enabled).
+   */
+  get queue(): OfflineQueue | undefined {
+    return this.offlineQueue;
   }
 
   // -----------------------------------------------------------------------
@@ -114,6 +167,11 @@ export class HttpClient {
     data?: unknown,
     signal?: AbortSignal,
   ): Promise<T> {
+    // Offline queue: enqueue write requests when offline
+    if (this.offlineQueue && !this._isOnline) {
+      return this.offlineQueue.enqueue({ method: 'POST', path, data }) as Promise<T>;
+    }
+
     // Cacheable POST endpoints (read-only semantics)
     if (isCacheablePost(path)) {
       const cacheKey = this.cache.generateKey('POST', path, data);
@@ -151,6 +209,10 @@ export class HttpClient {
     data?: unknown,
     signal?: AbortSignal,
   ): Promise<T> {
+    if (this.offlineQueue && !this._isOnline) {
+      return this.offlineQueue.enqueue({ method: 'PUT', path, data }) as Promise<T>;
+    }
+
     const result = await this.retry.execute(async () => {
       const response = await this.axios.put<T>(path, data, { signal });
       return response.data;
@@ -173,6 +235,10 @@ export class HttpClient {
     data?: unknown,
     signal?: AbortSignal,
   ): Promise<T> {
+    if (this.offlineQueue && !this._isOnline) {
+      return this.offlineQueue.enqueue({ method: 'PATCH', path, data }) as Promise<T>;
+    }
+
     const result = await this.retry.execute(async () => {
       const response = await this.axios.patch<T>(path, data, { signal });
       return response.data;
@@ -190,6 +256,10 @@ export class HttpClient {
    * @returns The parsed response body.
    */
   async delete<T>(path: string, signal?: AbortSignal): Promise<T> {
+    if (this.offlineQueue && !this._isOnline) {
+      return this.offlineQueue.enqueue({ method: 'DELETE', path }) as Promise<T>;
+    }
+
     const result = await this.retry.execute(async () => {
       const response = await this.axios.delete<T>(path, { signal });
       return response.data;

@@ -19,6 +19,7 @@ export type {
   HealthResponse,
   HealthStatus,
   ServiceStatus,
+  OfflineConfig,
 } from './common';
 export type { CompoundId, SortOrder } from './common';
 
@@ -26,8 +27,6 @@ export type { CompoundId, SortOrder } from './common';
 export type {
   ContextLayer,
   ContextRequest,
-  ContextRetrieveOptions,
-  ContextRetrieveRequest,
   ContextMemory,
   ContextProfile,
   ContextMessage,
@@ -37,12 +36,8 @@ export type {
   ContextGraph,
   ContextMeta,
   ContextRetrieveResponse,
-  ProfileMemory,
-  ConversationMessage,
-  KnowledgeEntity as ContextKnowledgeEntity,
-  ContextResponse,
 } from './context';
-export type { MemoryTypeFilter, OwnerType } from './context';
+export type { OwnerType } from './context';
 
 // Memory types
 export type {

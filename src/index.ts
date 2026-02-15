@@ -51,6 +51,12 @@ export { KnowledgeService } from './services/knowledge';
 export { ActivityService } from './services/activities';
 export { TenantService } from './services/tenants';
 
+// Service parameter types (defined in service files)
+export type { MemoryListParams, MemoryJournalParams } from './services/memories';
+export type { ConversationListParams, MessageListParams } from './services/conversations';
+export type { EntityCreate, EntityListParams } from './services/knowledge';
+export type { RequestOptions } from './services/base';
+
 // ---------------------------------------------------------------------------
 // Errors
 // ---------------------------------------------------------------------------
@@ -66,6 +72,7 @@ export {
   RateLimitError,
   ValidationError,
   NotFoundError,
+  InputValidationError,
 } from './errors';
 
 // ---------------------------------------------------------------------------
@@ -88,14 +95,13 @@ export type {
   ServiceStatus,
   CompoundId,
   SortOrder,
+  OfflineConfig,
 } from './types';
 
 // Context types
 export type {
   ContextLayer,
   ContextRequest,
-  ContextRetrieveOptions,
-  ContextRetrieveRequest,
   ContextMemory,
   ContextProfile,
   ContextMessage,
@@ -105,11 +111,6 @@ export type {
   ContextGraph,
   ContextMeta,
   ContextRetrieveResponse,
-  ProfileMemory,
-  ConversationMessage,
-  ContextKnowledgeEntity,
-  ContextResponse,
-  MemoryTypeFilter,
   OwnerType,
 } from './types';
 
@@ -177,3 +178,24 @@ export type {
   TenantTier,
   ApiKeyScope,
 } from './types';
+
+// ---------------------------------------------------------------------------
+// HTTP utilities
+// ---------------------------------------------------------------------------
+export { OfflineQueue } from './http';
+export type { QueuedRequest } from './http';
+
+// ---------------------------------------------------------------------------
+// Zod Schemas (runtime validation)
+// ---------------------------------------------------------------------------
+export {
+  contextRequestSchema,
+  memoryCreateSchema,
+  memoryUpdateSchema,
+  memorySearchSchema,
+  conversationCreateSchema,
+  messageCreateSchema,
+  entityCreateSchema,
+  graphQueryRequestSchema,
+  extractionRequestSchema,
+} from './schemas';

@@ -10,6 +10,14 @@
 import type { HttpClient } from '../http/client';
 
 /**
+ * Options that can be passed to any service method.
+ */
+export interface RequestOptions {
+  /** Optional AbortSignal to cancel the request. */
+  signal?: AbortSignal;
+}
+
+/**
  * Abstract base class that all Nexus service classes extend.
  *
  * Provides a protected reference to the SDK's {@link HttpClient} so that

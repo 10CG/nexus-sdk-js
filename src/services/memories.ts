@@ -10,6 +10,7 @@
  */
 
 import { BaseService } from './base';
+import type { RequestOptions } from './base';
 import type {
   Memory,
   MemoryCreate,
@@ -20,6 +21,8 @@ import type {
   JournalResponse,
   MemoryType,
 } from '../types/memory';
+import { memoryCreateSchema, memoryUpdateSchema, memorySearchSchema } from '../schemas/memory';
+import { InputValidationError } from '../errors/validation';
 
 /**
  * Parameters for listing memories with optional filtering and pagination.
@@ -80,8 +83,12 @@ export class MemoryService extends BaseService {
    * @param data - Memory creation payload including user_id, content, and optional type/metadata.
    * @returns The newly created memory with generated ID and timestamps.
    */
-  async create(data: MemoryCreate): Promise<Memory> {
-    return this.http.post<Memory>('/memories', data);
+  async create(data: MemoryCreate, options?: RequestOptions): Promise<Memory> {
+    const parsed = memoryCreateSchema.safeParse(data);
+    if (!parsed.success) {
+      throw new InputValidationError(parsed.error);
+    }
+    return this.http.post<Memory>('/memories', data, options?.signal);
   }
 
   /**
@@ -90,8 +97,8 @@ export class MemoryService extends BaseService {
    * @param params - Optional filters for user_id, memory_type, and pagination controls.
    * @returns Paginated list of memory records.
    */
-  async list(params?: MemoryListParams): Promise<MemoryList> {
-    return this.http.get<MemoryList>('/memories', params as Record<string, unknown>);
+  async list(params?: MemoryListParams, options?: RequestOptions): Promise<MemoryList> {
+    return this.http.get<MemoryList>('/memories', params as Record<string, unknown>, options?.signal);
   }
 
   /**
@@ -101,8 +108,8 @@ export class MemoryService extends BaseService {
    * @returns The memory record.
    * @throws {ApiError} 404 if the memory does not exist.
    */
-  async get(memoryId: string): Promise<Memory> {
-    return this.http.get<Memory>(`/memories/${memoryId}`);
+  async get(memoryId: string, options?: RequestOptions): Promise<Memory> {
+    return this.http.get<Memory>(`/memories/${memoryId}`, undefined, options?.signal);
   }
 
   /**
@@ -115,8 +122,12 @@ export class MemoryService extends BaseService {
    * @returns The updated memory record.
    * @throws {ApiError} 404 if the memory does not exist.
    */
-  async update(memoryId: string, data: MemoryUpdate): Promise<Memory> {
-    return this.http.patch<Memory>(`/memories/${memoryId}`, data);
+  async update(memoryId: string, data: MemoryUpdate, options?: RequestOptions): Promise<Memory> {
+    const parsed = memoryUpdateSchema.safeParse(data);
+    if (!parsed.success) {
+      throw new InputValidationError(parsed.error);
+    }
+    return this.http.patch<Memory>(`/memories/${memoryId}`, data, options?.signal);
   }
 
   /**
@@ -125,8 +136,8 @@ export class MemoryService extends BaseService {
    * @param memoryId - UUID of the memory to delete.
    * @throws {ApiError} 404 if the memory does not exist.
    */
-  async delete(memoryId: string): Promise<void> {
-    return this.http.delete<void>(`/memories/${memoryId}`);
+  async delete(memoryId: string, options?: RequestOptions): Promise<void> {
+    return this.http.delete<void>(`/memories/${memoryId}`, options?.signal);
   }
 
   /**
@@ -138,8 +149,12 @@ export class MemoryService extends BaseService {
    * @param request - Search parameters including user_id, query, and optional filters.
    * @returns Search results with scored memories and timing metadata.
    */
-  async search(request: MemorySearch): Promise<MemorySearchResult> {
-    return this.http.post<MemorySearchResult>('/memories/search', request);
+  async search(request: MemorySearch, options?: RequestOptions): Promise<MemorySearchResult> {
+    const parsed = memorySearchSchema.safeParse(request);
+    if (!parsed.success) {
+      throw new InputValidationError(parsed.error);
+    }
+    return this.http.post<MemorySearchResult>('/memories/search', request, options?.signal);
   }
 
   /**
@@ -151,7 +166,7 @@ export class MemoryService extends BaseService {
    * @param params - Optional filters for format, date range, and user_id.
    * @returns Journal response with memories grouped by date.
    */
-  async journal(params?: MemoryJournalParams): Promise<JournalResponse> {
-    return this.http.get<JournalResponse>('/memories/journal', params as Record<string, unknown>);
+  async journal(params?: MemoryJournalParams, options?: RequestOptions): Promise<JournalResponse> {
+    return this.http.get<JournalResponse>('/memories/journal', params as Record<string, unknown>, options?.signal);
   }
 }

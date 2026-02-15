@@ -7,6 +7,8 @@
  * be present.
  */
 
+import type { OfflineConfig } from './types/common';
+
 // ---------------------------------------------------------------------------
 // Public configuration interfaces
 // ---------------------------------------------------------------------------
@@ -53,11 +55,9 @@ export interface NexusConfig {
   cache?: CacheConfig | false;
   /** Retry behaviour. Pass `false` to disable retries entirely. */
   retry?: RetryConfig | false;
+  /** Offline queue configuration. */
+  offline?: OfflineConfig;
 }
-
-// ---------------------------------------------------------------------------
-// Resolved (fully-populated) configuration
-// ---------------------------------------------------------------------------
 
 /** Fully-resolved cache configuration (all fields required). */
 export interface ResolvedCacheConfig {
@@ -98,6 +98,8 @@ export interface ResolvedConfig {
   cache: ResolvedCacheConfig | false;
   /** Resolved retry settings, or `false` if retries are disabled. */
   retry: ResolvedRetryConfig | false;
+  /** Offline queue configuration (undefined if not provided). */
+  offline?: OfflineConfig;
 }
 
 // ---------------------------------------------------------------------------
@@ -194,5 +196,6 @@ export function resolveConfig(userConfig: NexusConfig): ResolvedConfig {
     timeout: userConfig.timeout ?? DEFAULT_CONFIG.timeout,
     cache,
     retry,
+    offline: userConfig.offline,
   };
 }

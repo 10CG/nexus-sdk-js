@@ -10,6 +10,7 @@
  */
 
 import { BaseService } from './base';
+import type { RequestOptions } from './base';
 import type {
   Activity,
   ActivityStreamRequest,
@@ -53,8 +54,8 @@ export class ActivityService extends BaseService {
    * @param request - The activity stream payload containing agent ID and activities.
    * @returns Processing summary with accepted / processed / queued counts.
    */
-  async stream(request: ActivityStreamRequest): Promise<ActivityStreamResponse> {
-    return this.http.post<ActivityStreamResponse>('/activities/stream', request);
+  async stream(request: ActivityStreamRequest, options?: RequestOptions): Promise<ActivityStreamResponse> {
+    return this.http.post<ActivityStreamResponse>('/activities/stream', request, options?.signal);
   }
 
   /**
@@ -66,10 +67,10 @@ export class ActivityService extends BaseService {
    * @param agentId   - Agent identifier (defaults to `'default'`).
    * @returns Processing summary with accepted / processed / queued counts.
    */
-  async log(activity: Activity, agentId?: string): Promise<ActivityStreamResponse> {
+  async log(activity: Activity, agentId?: string, options?: RequestOptions): Promise<ActivityStreamResponse> {
     return this.stream({
       agent_id: agentId || 'default',
       activities: [activity],
-    });
+    }, options);
   }
 }
