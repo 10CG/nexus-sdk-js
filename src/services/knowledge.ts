@@ -10,6 +10,7 @@
  */
 
 import { BaseService } from './base';
+import type { RequestOptions } from './base';
 import type {
   KnowledgeEntity,
   ExtractionRequest,
@@ -18,6 +19,8 @@ import type {
   GraphQueryRequest,
   GraphQueryResponse,
 } from '../types/knowledge';
+import { entityCreateSchema, graphQueryRequestSchema, extractionRequestSchema } from '../schemas/knowledge';
+import { InputValidationError } from '../errors/validation';
 
 /**
  * Request payload for creating a new knowledge entity.
@@ -82,8 +85,12 @@ export class KnowledgeService extends BaseService {
    * @param data - Entity creation payload including name, type, and optional description/properties.
    * @returns The newly created entity with generated entity_id.
    */
-  async createEntity(data: EntityCreate): Promise<KnowledgeEntity> {
-    return this.http.post<KnowledgeEntity>('/knowledge/entities', data);
+  async createEntity(data: EntityCreate, options?: RequestOptions): Promise<KnowledgeEntity> {
+    const parsed = entityCreateSchema.safeParse(data);
+    if (!parsed.success) {
+      throw new InputValidationError(parsed.error);
+    }
+    return this.http.post<KnowledgeEntity>('/knowledge/entities', data, options?.signal);
   }
 
   /**
@@ -92,8 +99,8 @@ export class KnowledgeService extends BaseService {
    * @param params - Optional filters for user_id, entity_type, and pagination controls.
    * @returns Paginated list of knowledge entities.
    */
-  async listEntities(params?: EntityListParams): Promise<EntityListResponse> {
-    return this.http.get<EntityListResponse>('/knowledge/entities', params as Record<string, unknown>);
+  async listEntities(params?: EntityListParams, options?: RequestOptions): Promise<EntityListResponse> {
+    return this.http.get<EntityListResponse>('/knowledge/entities', params as Record<string, unknown>, options?.signal);
   }
 
   /**
@@ -106,8 +113,12 @@ export class KnowledgeService extends BaseService {
    * @param request - Graph query parameters including starting entity name, depth, and optional relationship type filters.
    * @returns Graph query response with the start entity, traversal paths, and total path count.
    */
-  async query(request: GraphQueryRequest): Promise<GraphQueryResponse> {
-    return this.http.post<GraphQueryResponse>('/knowledge/query', request);
+  async query(request: GraphQueryRequest, options?: RequestOptions): Promise<GraphQueryResponse> {
+    const parsed = graphQueryRequestSchema.safeParse(request);
+    if (!parsed.success) {
+      throw new InputValidationError(parsed.error);
+    }
+    return this.http.post<GraphQueryResponse>('/knowledge/query', request, options?.signal);
   }
 
   /**
@@ -120,7 +131,11 @@ export class KnowledgeService extends BaseService {
    * @param request - Extraction request including the source text and ownership (agent_id or owner_user_id).
    * @returns Extraction result with lists of created entities and relationships.
    */
-  async extract(request: ExtractionRequest): Promise<ExtractionResult> {
-    return this.http.post<ExtractionResult>('/knowledge/extract', request);
+  async extract(request: ExtractionRequest, options?: RequestOptions): Promise<ExtractionResult> {
+    const parsed = extractionRequestSchema.safeParse(request);
+    if (!parsed.success) {
+      throw new InputValidationError(parsed.error);
+    }
+    return this.http.post<ExtractionResult>('/knowledge/extract', request, options?.signal);
   }
 }

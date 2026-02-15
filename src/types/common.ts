@@ -5,6 +5,22 @@
  * Based on Nexus API v2.0 OpenAPI specification.
  */
 
+// ============== Offline ==============
+
+/**
+ * Configuration for offline request queuing.
+ * When enabled, requests made while offline are queued and replayed on reconnect.
+ */
+export interface OfflineConfig {
+  /** Whether offline queuing is enabled. */
+  enabled: boolean;
+  /**
+   * Maximum number of requests to buffer while offline.
+   * @default 100
+   */
+  maxQueueSize?: number;
+}
+
 // ============== Configuration ==============
 
 /**
@@ -58,6 +74,8 @@ export interface NexusConfig {
    * @default 30000
    */
   timeout?: number;
+  /** Offline queue configuration. */
+  offline?: OfflineConfig;
 }
 
 // ============== Compound ID ==============

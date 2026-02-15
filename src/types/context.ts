@@ -4,8 +4,7 @@
  * Type definitions for the Context Service - the core aggregated context
  * retrieval API used in Chat main flows.
  *
- * Supports both v1.1 legacy ContextRetrieve and v2.0 DX Enhanced
- * temporal-anchored multi-layer retrieval.
+ * v2.0 DX Enhanced temporal-anchored multi-layer retrieval.
  *
  * Based on Nexus API v2.0 OpenAPI specification.
  */
@@ -78,44 +77,6 @@ export interface ContextRequest {
    * @default 5
    */
   graph_limit?: number;
-}
-
-// ============== Context Retrieve (v1.1 Legacy) ==============
-
-/** Options for the v1.1 legacy context retrieve operation. */
-export interface ContextRetrieveOptions {
-  /** Maximum number of memories to return. @default 5 */
-  memory_limit?: number;
-  /** Filter by memory types */
-  memory_types?: MemoryTypeFilter[];
-  /** Minimum similarity threshold for memory retrieval. @default 0.7 */
-  memory_threshold?: number;
-  /** Maximum number of history messages to return. @default 10 */
-  history_limit?: number;
-  /** Whether to include knowledge graph query results. @default true */
-  include_graph?: boolean;
-  /** Graph traversal depth. @default 2 */
-  graph_depth?: number;
-}
-
-/** Memory type filter values */
-export type MemoryTypeFilter = 'episodic' | 'semantic' | 'procedural';
-
-/**
- * Request payload for the v1.1 legacy context retrieve endpoint.
- * POST /context/retrieve
- */
-export interface ContextRetrieveRequest {
-  /** User ID within the tenant (Nexus auto-prefixes tenant ID) */
-  user_id: string;
-  /** Semantic search query text */
-  query: string;
-  /** Optional session ID for conversation context */
-  session_id?: string;
-  /** Optional Agent ID for filtering agent-specific knowledge */
-  agent_id?: string;
-  /** Retrieval options */
-  options?: ContextRetrieveOptions;
 }
 
 // ============== Context Response Sub-types ==============
@@ -248,78 +209,4 @@ export interface ContextRetrieveResponse {
   graph?: ContextGraph;
   /** Retrieval performance metadata */
   meta?: ContextMeta;
-}
-
-// ============== Legacy Context Response (Python schema compat) ==============
-
-/**
- * Profile memory item in the legacy context response format.
- * Matches the Python ProfileMemory schema.
- */
-export interface ProfileMemory {
-  /** Memory identifier */
-  memory_id: string;
-  /** Memory content text */
-  content: string;
-  /** Type of memory */
-  memory_type: string;
-  /** Memory category */
-  category?: string;
-  /** Similarity score from vector search */
-  similarity_score?: number;
-  /** Additional metadata */
-  metadata?: Record<string, unknown>;
-}
-
-/**
- * Conversation message in the legacy context response format.
- * Matches the Python ConversationMessage schema.
- */
-export interface ConversationMessage {
-  /** Message identifier */
-  message_id: string;
-  /** Message role */
-  role: 'user' | 'assistant' | 'system' | 'tool';
-  /** Message content text */
-  content: string;
-  /** Timestamp when the message was created (ISO 8601) */
-  created_at: string;
-  /** Additional metadata */
-  metadata?: Record<string, unknown>;
-}
-
-/**
- * Knowledge entity in the legacy context response format.
- * Matches the Python KnowledgeEntity schema.
- */
-export interface KnowledgeEntity {
-  /** Entity identifier */
-  entity_id: string;
-  /** Entity display name */
-  name: string;
-  /** Entity type classification */
-  type: string;
-  /** Entity description */
-  description?: string;
-  /** Related entity relationships */
-  relationships?: Array<Record<string, unknown>>;
-}
-
-/**
- * Legacy aggregated context response.
- * Matches the Python ContextResponse schema.
- */
-export interface ContextResponse {
-  /** Memory profile items */
-  profile?: ProfileMemory[];
-  /** Conversation history messages */
-  history?: ConversationMessage[];
-  /** Knowledge graph entities */
-  graph?: KnowledgeEntity[];
-  /** Timestamp when the context was retrieved (ISO 8601) */
-  retrieved_at: string;
-  /** Total retrieval time in milliseconds */
-  total_latency_ms: number;
-  /** Partial failure errors keyed by service name */
-  errors?: Record<string, string>;
 }

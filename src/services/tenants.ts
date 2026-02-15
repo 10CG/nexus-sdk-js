@@ -10,6 +10,7 @@
  */
 
 import { BaseService } from './base';
+import type { RequestOptions } from './base';
 import type { Tenant, TenantUsage } from '../types/tenant';
 
 /**
@@ -41,8 +42,8 @@ export class TenantService extends BaseService {
    *
    * @returns The authenticated tenant's profile.
    */
-  async me(): Promise<Tenant> {
-    return this.http.get<Tenant>('/tenants/me');
+  async me(options?: RequestOptions): Promise<Tenant> {
+    return this.http.get<Tenant>('/tenants/me', undefined, options?.signal);
   }
 
   /**
@@ -53,7 +54,7 @@ export class TenantService extends BaseService {
    *
    * @returns Current resource usage for the authenticated tenant.
    */
-  async usage(): Promise<TenantUsage> {
-    return this.http.get<TenantUsage>('/tenants/me/usage');
+  async usage(options?: RequestOptions): Promise<TenantUsage> {
+    return this.http.get<TenantUsage>('/tenants/me/usage', undefined, options?.signal);
   }
 }

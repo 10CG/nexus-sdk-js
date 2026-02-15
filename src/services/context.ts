@@ -11,7 +11,10 @@
  */
 
 import { BaseService } from './base';
+import type { RequestOptions } from './base';
 import type { ContextRequest, ContextRetrieveResponse } from '../types/context';
+import { contextRequestSchema } from '../schemas/context';
+import { InputValidationError } from '../errors/validation';
 
 /**
  * Service for aggregated context retrieval.
@@ -47,7 +50,11 @@ export class ContextService extends BaseService {
    * @param request - Context retrieval parameters including user_id, query, and layer configuration.
    * @returns Aggregated context containing profile, history, graph, and performance metadata.
    */
-  async retrieve(request: ContextRequest): Promise<ContextRetrieveResponse> {
-    return this.http.post<ContextRetrieveResponse>('/context/retrieve', request);
+  async retrieve(request: ContextRequest, options?: RequestOptions): Promise<ContextRetrieveResponse> {
+    const parsed = contextRequestSchema.safeParse(request);
+    if (!parsed.success) {
+      throw new InputValidationError(parsed.error);
+    }
+    return this.http.post<ContextRetrieveResponse>('/context/retrieve', request, options?.signal);
   }
 }

@@ -10,6 +10,7 @@
 import { resolveConfig } from './config';
 import type { NexusConfig } from './config';
 import { HttpClient } from './http';
+import { OfflineQueue } from './http/queue';
 import { ContextService } from './services/context';
 import { MemoryService } from './services/memories';
 import { ConversationService } from './services/conversations';
@@ -82,5 +83,22 @@ export class NexusClient {
     this.knowledge = new KnowledgeService(this.http);
     this.activities = new ActivityService(this.http);
     this.tenants = new TenantService(this.http);
+  }
+
+  /**
+   * Access the offline queue instance (if offline mode is enabled).
+   */
+  get queue(): OfflineQueue | undefined {
+    return this.http.queue;
+  }
+
+  /**
+   * Set the online/offline status of the client.
+   *
+   * When transitioning from offline to online, queued requests are
+   * automatically flushed.
+   */
+  setOnline(online: boolean): void {
+    this.http.setOnline(online);
   }
 }

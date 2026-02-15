@@ -34,3 +34,6 @@ export {
   ValidationError,
   NotFoundError,
 } from './api';
+
+// Client-side validation errors (zod)
+export { InputValidationError } from './validation';
