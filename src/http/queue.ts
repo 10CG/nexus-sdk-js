@@ -102,9 +102,9 @@ export class OfflineQueue {
    *
    * @throws {NexusError} If the queue has reached its maximum capacity.
    */
-  enqueue(
+  enqueue<T = unknown>(
     request: Omit<QueuedRequest, 'id' | 'resolve' | 'reject' | 'timestamp'>,
-  ): Promise<unknown> {
+  ): Promise<T> {
     if (this.queue.length >= this.maxSize) {
       return Promise.reject(
         new NexusError(
@@ -114,7 +114,7 @@ export class OfflineQueue {
       );
     }
 
-    return new Promise<unknown>((resolve, reject) => {
+    return new Promise<T>((resolve, reject) => {
       this.idCounter += 1;
 
       const queued: QueuedRequest = {
@@ -122,7 +122,7 @@ export class OfflineQueue {
         method: request.method,
         path: request.path,
         data: request.data,
-        resolve,
+        resolve: resolve as (value: unknown) => void,
         reject,
         timestamp: Date.now(),
       };

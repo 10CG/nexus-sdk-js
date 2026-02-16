@@ -11,6 +11,7 @@ import {
   entityCreateSchema,
   graphQueryRequestSchema,
   extractionRequestSchema,
+  apiKeyCreateSchema,
 } from '../../src/schemas';
 import { InputValidationError } from '../../src/errors/validation';
 import { NexusError } from '../../src/errors/base';
@@ -313,5 +314,50 @@ describe('InputValidationError', () => {
       const err = new InputValidationError(result.error);
       expect(err.name).toBe('InputValidationError');
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// apiKeyCreateSchema
+// ---------------------------------------------------------------------------
+
+describe('apiKeyCreateSchema', () => {
+  it('should accept valid minimal request', () => {
+    const result = apiKeyCreateSchema.safeParse({ name: 'My Key' });
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept valid full request', () => {
+    const result = apiKeyCreateSchema.safeParse({
+      name: 'Production Key',
+      scopes: ['read', 'write'],
+      expires_days: 90,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject empty name', () => {
+    const result = apiKeyCreateSchema.safeParse({ name: '' });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject name exceeding 100 chars', () => {
+    const result = apiKeyCreateSchema.safeParse({ name: 'a'.repeat(101) });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject invalid scope', () => {
+    const result = apiKeyCreateSchema.safeParse({ name: 'Key', scopes: ['invalid'] });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject expires_days < 1', () => {
+    const result = apiKeyCreateSchema.safeParse({ name: 'Key', expires_days: 0 });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject expires_days > 365', () => {
+    const result = apiKeyCreateSchema.safeParse({ name: 'Key', expires_days: 366 });
+    expect(result.success).toBe(false);
   });
 });

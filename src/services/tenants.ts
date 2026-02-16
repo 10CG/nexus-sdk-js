@@ -11,7 +11,7 @@
 
 import { BaseService } from './base';
 import type { RequestOptions } from './base';
-import type { Tenant, TenantUsage } from '../types/tenant';
+import type { Tenant, TenantUsage, ApiKey, ApiKeyCreate, ApiKeyCreated } from '../types/tenant';
 
 /**
  * Service for managing the current tenant's profile and usage.
@@ -56,5 +56,33 @@ export class TenantService extends BaseService {
    */
   async usage(options?: RequestOptions): Promise<TenantUsage> {
     return this.http.get<TenantUsage>('/tenants/me/usage', undefined, options?.signal);
+  }
+
+  /**
+   * List all API keys for the current tenant.
+   *
+   * @returns Array of API key records (without full key values).
+   */
+  async listApiKeys(options?: RequestOptions): Promise<ApiKey[]> {
+    return this.http.get<ApiKey[]>('/tenants/me/api-keys', undefined, options?.signal);
+  }
+
+  /**
+   * Create a new API key for the current tenant.
+   *
+   * @param data - API key creation parameters (name, scopes, expiry).
+   * @returns The newly created API key, including the full key value (shown only once).
+   */
+  async createApiKey(data: ApiKeyCreate, options?: RequestOptions): Promise<ApiKeyCreated> {
+    return this.http.post<ApiKeyCreated>('/tenants/me/api-keys', data, options?.signal);
+  }
+
+  /**
+   * Revoke (delete) an API key.
+   *
+   * @param id - The UUID of the API key to revoke.
+   */
+  async revokeApiKey(id: string, options?: RequestOptions): Promise<void> {
+    return this.http.delete<void>(`/tenants/me/api-keys/${id}`, options?.signal);
   }
 }

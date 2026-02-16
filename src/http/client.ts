@@ -169,7 +169,7 @@ export class HttpClient {
   ): Promise<T> {
     // Offline queue: enqueue write requests when offline
     if (this.offlineQueue && !this._isOnline) {
-      return this.offlineQueue.enqueue({ method: 'POST', path, data }) as Promise<T>;
+      return this.offlineQueue.enqueue<T>({ method: 'POST', path, data });
     }
 
     // Cacheable POST endpoints (read-only semantics)
@@ -210,7 +210,7 @@ export class HttpClient {
     signal?: AbortSignal,
   ): Promise<T> {
     if (this.offlineQueue && !this._isOnline) {
-      return this.offlineQueue.enqueue({ method: 'PUT', path, data }) as Promise<T>;
+      return this.offlineQueue.enqueue<T>({ method: 'PUT', path, data });
     }
 
     const result = await this.retry.execute(async () => {
@@ -236,7 +236,7 @@ export class HttpClient {
     signal?: AbortSignal,
   ): Promise<T> {
     if (this.offlineQueue && !this._isOnline) {
-      return this.offlineQueue.enqueue({ method: 'PATCH', path, data }) as Promise<T>;
+      return this.offlineQueue.enqueue<T>({ method: 'PATCH', path, data });
     }
 
     const result = await this.retry.execute(async () => {
@@ -257,7 +257,7 @@ export class HttpClient {
    */
   async delete<T>(path: string, signal?: AbortSignal): Promise<T> {
     if (this.offlineQueue && !this._isOnline) {
-      return this.offlineQueue.enqueue({ method: 'DELETE', path }) as Promise<T>;
+      return this.offlineQueue.enqueue<T>({ method: 'DELETE', path });
     }
 
     const result = await this.retry.execute(async () => {

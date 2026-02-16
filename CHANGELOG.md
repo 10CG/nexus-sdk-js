@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-02-16
+
+### Added
+- TenantService API Key CRUD: listApiKeys(), createApiKey(), revokeApiKey()
+- apiKeyCreateSchema zod 校验 (name/scopes/expires_days)
+- TenantService 单元测试 (6 tests)
+- apiKeyCreateSchema 单元测试 (7 tests)
+
+### Changed
+- OfflineQueue.enqueue 泛型化: `enqueue<T>()` 替代 `as Promise<T>` 强转
+- NexusConfig/CacheConfig/RetryConfig 去重: types/common.ts 移除重复定义，统一从 config.ts 导出
+
 ## [1.0.0] - 2026-02-09
 
 ### Added

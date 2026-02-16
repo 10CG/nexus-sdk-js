@@ -8,9 +8,6 @@
 
 // Common types
 export type {
-  CacheConfig,
-  RetryConfig,
-  NexusConfig,
   Pagination,
   PaginatedResponse,
   ApiResponse,
@@ -22,6 +19,9 @@ export type {
   OfflineConfig,
 } from './common';
 export type { CompoundId, SortOrder } from './common';
+
+// Configuration types (canonical source: ../config)
+export type { CacheConfig, RetryConfig, NexusConfig } from '../config';
 
 // Context types
 export type {

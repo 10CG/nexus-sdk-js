@@ -198,4 +198,5 @@ export {
   entityCreateSchema,
   graphQueryRequestSchema,
   extractionRequestSchema,
+  apiKeyCreateSchema,
 } from './schemas';

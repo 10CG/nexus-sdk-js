@@ -21,63 +21,6 @@ export interface OfflineConfig {
   maxQueueSize?: number;
 }
 
-// ============== Configuration ==============
-
-/**
- * Cache configuration for the SDK client.
- * Controls in-memory caching behavior for API responses.
- */
-export interface CacheConfig {
-  /** Maximum number of cached entries */
-  max: number;
-  /** Time-to-live in milliseconds */
-  ttl: number;
-}
-
-/**
- * Retry configuration for failed API requests.
- * Implements exponential backoff strategy.
- */
-export interface RetryConfig {
-  /** Maximum number of retry attempts */
-  maxRetries: number;
-  /** Initial delay between retries in milliseconds */
-  initialDelay: number;
-  /** Maximum delay between retries in milliseconds */
-  maxDelay: number;
-  /** Multiplier applied to delay after each retry */
-  backoffFactor: number;
-}
-
-/**
- * Main configuration for the Nexus SDK client.
- * Required to initialize the NexusClient instance.
- */
-export interface NexusConfig {
-  /**
-   * API key for authentication.
-   * Format: `nx_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` (production)
-   * or `nx_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` (test)
-   */
-  apiKey: string;
-  /**
-   * Base URL of the Nexus API.
-   * @default "http://localhost:8001/v1"
-   */
-  baseUrl?: string;
-  /** Cache configuration for API responses */
-  cache?: CacheConfig;
-  /** Retry configuration for failed requests */
-  retry?: RetryConfig;
-  /**
-   * Request timeout in milliseconds.
-   * @default 30000
-   */
-  timeout?: number;
-  /** Offline queue configuration. */
-  offline?: OfflineConfig;
-}
-
 // ============== Compound ID ==============
 
 /**
