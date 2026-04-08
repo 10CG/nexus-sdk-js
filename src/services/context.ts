@@ -13,6 +13,7 @@
 import { BaseService } from './base';
 import type { RequestOptions } from './base';
 import type { ContextRequest, ContextRetrieveResponse } from '../types/context';
+import { DEPTH_PRESETS } from '../types/context';
 import { contextRequestSchema } from '../schemas/context';
 import { InputValidationError } from '../errors/validation';
 
@@ -51,10 +52,20 @@ export class ContextService extends BaseService {
    * @returns Aggregated context containing profile, history, graph, and performance metadata.
    */
   async retrieve(request: ContextRequest, options?: RequestOptions): Promise<ContextRetrieveResponse> {
-    const parsed = contextRequestSchema.safeParse(request);
+    // Resolve depth preset: preset values are the base, explicit caller fields win.
+    let resolved: ContextRequest;
+    if (request.depth !== undefined && DEPTH_PRESETS[request.depth]) {
+      const { depth, ...rest } = request;
+      resolved = { ...DEPTH_PRESETS[depth], ...rest };
+    } else {
+      const { depth: _depth, ...rest } = request;
+      resolved = rest;
+    }
+
+    const parsed = contextRequestSchema.safeParse(resolved);
     if (!parsed.success) {
       throw new InputValidationError(parsed.error);
     }
-    return this.http.post<ContextRetrieveResponse>('/context/retrieve', request, options?.signal);
+    return this.http.post<ContextRetrieveResponse>('/context/retrieve', resolved, options?.signal);
   }
 }

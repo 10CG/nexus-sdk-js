@@ -19,6 +19,40 @@
  */
 export type ContextLayer = 'recent' | 'semantic' | 'graph';
 
+// ============== Context Depth Presets ==============
+
+/**
+ * Convenience depth levels for context retrieval.
+ *
+ * | Level | Profile | History | Graph | Layers            |
+ * |-------|---------|---------|-------|-------------------|
+ * | L0    | 1 mem   | off     | off   | []                |
+ * | L1    | 3 mems  | off     | off   | []                |
+ * | L2    | 10 mems | off     | off   | ["semantic"]      |
+ * | L3    | 20 mems | on      | on    | ["semantic","graph"] |
+ *
+ * Use with the `depth` parameter on {@link ContextRequest}.
+ * Explicit fields always override the preset values.
+ */
+export type ContextDepth = 'L0' | 'L1' | 'L2' | 'L3';
+
+/** @internal Partial ContextRequest overrides applied for each depth preset. */
+export type ContextDepthPreset = Pick<
+  ContextRequest,
+  'include_profile' | 'profile_limit' | 'include_history' | 'include_graph' | 'layers'
+>;
+
+/**
+ * Preset field overrides for each {@link ContextDepth} level.
+ * Applied before user-supplied options so explicit values always win.
+ */
+export const DEPTH_PRESETS: Record<ContextDepth, ContextDepthPreset> = {
+  L0: { include_profile: true, profile_limit: 1,  include_history: false, include_graph: false, layers: [] },
+  L1: { include_profile: true, profile_limit: 3,  include_history: false, include_graph: false, layers: [] },
+  L2: { include_profile: true, profile_limit: 10, include_history: false, include_graph: false, layers: ['semantic'] },
+  L3: { include_profile: true, profile_limit: 20, include_history: true,  include_graph: true,  layers: ['semantic', 'graph'] },
+};
+
 // ============== Context Request (v2.0 DX Enhanced) ==============
 
 /**
@@ -26,8 +60,20 @@ export type ContextLayer = 'recent' | 'semantic' | 'graph';
  * Supports multi-layer parallel retrieval with temporal anchoring (US-014).
  *
  * POST /context/retrieve
+ *
+ * The optional `depth` field is a client-side convenience shorthand.
+ * It is resolved to concrete field values before the request is sent to the
+ * backend, so it never appears in the wire payload.
  */
 export interface ContextRequest {
+  /**
+   * Convenience depth preset. When set, applies a predefined combination of
+   * `include_profile`, `profile_limit`, `include_history`, `include_graph`,
+   * and `layers`. Any field you supply explicitly overrides the preset value.
+   *
+   * @see {@link DEPTH_PRESETS} for exact values per level.
+   */
+  depth?: ContextDepth;
   /** User ID within the tenant (Nexus auto-prefixes tenant ID) */
   user_id: string;
   /** Optional semantic query text (used for the semantic layer) */

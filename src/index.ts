@@ -101,6 +101,8 @@ export type {
 // Context types
 export type {
   ContextLayer,
+  ContextDepth,
+  ContextDepthPreset,
   ContextRequest,
   ContextMemory,
   ContextProfile,
@@ -113,6 +115,7 @@ export type {
   ContextRetrieveResponse,
   OwnerType,
 } from './types';
+export { DEPTH_PRESETS } from './types';
 
 // Memory types
 export type {

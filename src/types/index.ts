@@ -26,6 +26,8 @@ export type { CacheConfig, RetryConfig, NexusConfig } from '../config';
 // Context types
 export type {
   ContextLayer,
+  ContextDepth,
+  ContextDepthPreset,
   ContextRequest,
   ContextMemory,
   ContextProfile,
@@ -38,6 +40,7 @@ export type {
   ContextRetrieveResponse,
 } from './context';
 export type { OwnerType } from './context';
+export { DEPTH_PRESETS } from './context';
 
 // Memory types
 export type {
