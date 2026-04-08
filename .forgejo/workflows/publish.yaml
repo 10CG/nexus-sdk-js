@@ -9,6 +9,9 @@ on:
     tags:
       - 'v*'
 
+env:
+  REGISTRY_URL: https://forgejo.10cg.pub/api/packages/10CG/npm/
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -32,8 +35,8 @@ jobs:
 
       - name: Configure npm registry
         run: |
-          npm config set @nexus:registry ${{ github.server_url }}/api/packages/10CG/npm/
-          npm config set -- '//${{ github.server_url_host }}/api/packages/10CG/npm/:_authToken' '${{ secrets.NPM_PUBLISH_TOKEN }}'
+          npm config set @nexus:registry ${{ env.REGISTRY_URL }}
+          npm config set -- '//forgejo.10cg.pub/api/packages/10CG/npm/:_authToken' '${{ secrets.NPM_PUBLISH_TOKEN }}'
 
       - name: Publish
         run: npm publish
