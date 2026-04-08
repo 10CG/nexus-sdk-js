@@ -9,22 +9,14 @@ on:
     tags:
       - 'v*'
 
-env:
-  # 内网直连 Forgejo，绕过 CF Access
-  REGISTRY_HOST: 192.168.69.200:3000
-  REGISTRY_URL: http://192.168.69.200:3000/api/packages/10CG/npm/
-
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: docker
+    container:
+      image: node:20-slim
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
 
       - name: Install dependencies
         run: npm ci
@@ -35,12 +27,10 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Configure npm registry
+      - name: Publish to Forgejo npm registry
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
         run: |
-          npm config set @nexus:registry ${{ env.REGISTRY_URL }}
-          npm config set -- '//${{ env.REGISTRY_HOST }}/api/packages/10CG/npm/:_authToken' '${{ secrets.NPM_PUBLISH_TOKEN }}'
-          echo "Registry configured:"
-          npm config get @nexus:registry
-
-      - name: Publish
-        run: npm publish --registry ${{ env.REGISTRY_URL }}
+          echo "@nexus:registry=http://192.168.69.200:3000/api/packages/10CG/npm/" > ~/.npmrc
+          echo "//192.168.69.200:3000/api/packages/10CG/npm/:_authToken=${NPM_TOKEN}" >> ~/.npmrc
+          npm publish --registry http://192.168.69.200:3000/api/packages/10CG/npm/
