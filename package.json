@@ -1,6 +1,6 @@
 {
   "name": "@nexus/sdk",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Official Node.js SDK for Nexus AI Cognitive Services Platform",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -60,5 +60,8 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "publishConfig": {
+    "registry": "https://forgejo.10cg.pub/api/packages/10CG/npm/"
+  }
 }

@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-04-08
+
+### Added
+- FeedbackService: submit() + list() — 反馈闭环 API 补全
+- Context depth 便捷参数: L0/L1/L2/L3 预设 (来源 MemPalace 渐进加载)
+- Feedback 类型定义: FeedbackSubmitRequest, FeedbackResponse, FeedbackListItem, FeedbackListResponse
+- 17 个 FeedbackService 单元测试 + 14 个 depth 单元测试
+
+### Changed
+- publishConfig 指向 Forgejo npm registry (内部发布)
+- CI workflow: tag push 自动 build + test + publish
+
 ## [1.1.0] - 2026-02-16
 
 ### Added
