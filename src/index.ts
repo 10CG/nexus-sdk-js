@@ -50,11 +50,13 @@ export { ConversationService } from './services/conversations';
 export { KnowledgeService } from './services/knowledge';
 export { ActivityService } from './services/activities';
 export { TenantService } from './services/tenants';
+export { FeedbackService } from './services/feedback';
 
 // Service parameter types (defined in service files)
 export type { MemoryListParams, MemoryJournalParams } from './services/memories';
 export type { ConversationListParams, MessageListParams } from './services/conversations';
 export type { EntityCreate, EntityListParams } from './services/knowledge';
+export type { FeedbackListParams } from './services/feedback';
 export type { RequestOptions } from './services/base';
 
 // ---------------------------------------------------------------------------
@@ -180,6 +182,15 @@ export type {
   UsageStats,
   TenantTier,
   ApiKeyScope,
+} from './types';
+
+// Feedback types
+export type {
+  FeedbackItemRequest,
+  FeedbackSubmitRequest,
+  FeedbackResponse,
+  FeedbackListItem,
+  FeedbackListResponse,
 } from './types';
 
 // ---------------------------------------------------------------------------

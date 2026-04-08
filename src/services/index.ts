@@ -9,6 +9,7 @@
  * - {@link KnowledgeService} - Knowledge graph construction and query (Fast GraphRAG)
  * - {@link ActivityService} - Activity stream ingestion for passive memory
  * - {@link TenantService} - Tenant profile and usage management
+ * - {@link FeedbackService} - Feedback loop: submit ratings and query records (v5.0)
  */
 
 // Base
@@ -24,3 +25,5 @@ export { KnowledgeService } from './knowledge';
 export type { EntityCreate, EntityListParams } from './knowledge';
 export { ActivityService } from './activities';
 export { TenantService } from './tenants';
+export { FeedbackService } from './feedback';
+export type { FeedbackListParams } from './feedback';

@@ -103,3 +103,12 @@ export type {
   UsageStats,
 } from './tenant';
 export type { TenantTier, ApiKeyScope } from './tenant';
+
+// Feedback types
+export type {
+  FeedbackItemRequest,
+  FeedbackSubmitRequest,
+  FeedbackResponse,
+  FeedbackListItem,
+  FeedbackListResponse,
+} from './feedback';

@@ -28,3 +28,4 @@ Thumbs.db
 .env.local
 .env.*.local
 nul
+nexus-sdk-*.tgz

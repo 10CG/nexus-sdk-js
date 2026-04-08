@@ -17,6 +17,7 @@ import { ConversationService } from './services/conversations';
 import { KnowledgeService } from './services/knowledge';
 import { ActivityService } from './services/activities';
 import { TenantService } from './services/tenants';
+import { FeedbackService } from './services/feedback';
 
 /**
  * Nexus AI Cognitive Services SDK client.
@@ -62,6 +63,9 @@ export class NexusClient {
   /** Tenant profile and usage management. */
   public readonly tenants: TenantService;
 
+  /** Feedback loop — submit ratings and query feedback records (v5.0). */
+  public readonly feedback: FeedbackService;
+
   /** @internal Shared HTTP transport. */
   private readonly http: HttpClient;
 
@@ -83,6 +87,7 @@ export class NexusClient {
     this.knowledge = new KnowledgeService(this.http);
     this.activities = new ActivityService(this.http);
     this.tenants = new TenantService(this.http);
+    this.feedback = new FeedbackService(this.http);
   }
 
   /**
