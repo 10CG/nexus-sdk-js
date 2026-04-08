@@ -1,6 +1,6 @@
 # @nexus/sdk npm 发布
 # 触发: push tag v*
-# 目标: Forgejo npm registry (内部局域网)
+# 目标: Forgejo npm registry (局域网内网直连)
 
 name: Publish to npm
 
@@ -10,7 +10,9 @@ on:
       - 'v*'
 
 env:
-  REGISTRY_URL: https://forgejo.10cg.pub/api/packages/10CG/npm/
+  # 内网直连 Forgejo，绕过 CF Access
+  REGISTRY_HOST: 192.168.69.200:3000
+  REGISTRY_URL: http://192.168.69.200:3000/api/packages/10CG/npm/
 
 jobs:
   publish:
@@ -36,7 +38,9 @@ jobs:
       - name: Configure npm registry
         run: |
           npm config set @nexus:registry ${{ env.REGISTRY_URL }}
-          npm config set -- '//forgejo.10cg.pub/api/packages/10CG/npm/:_authToken' '${{ secrets.NPM_PUBLISH_TOKEN }}'
+          npm config set -- '//${{ env.REGISTRY_HOST }}/api/packages/10CG/npm/:_authToken' '${{ secrets.NPM_PUBLISH_TOKEN }}'
+          echo "Registry configured:"
+          npm config get @nexus:registry
 
       - name: Publish
-        run: npm publish
+        run: npm publish --registry ${{ env.REGISTRY_URL }}
