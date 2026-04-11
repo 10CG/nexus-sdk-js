@@ -27,3 +27,4 @@ export { ActivityService } from './activities';
 export { TenantService } from './tenants';
 export { FeedbackService } from './feedback';
 export type { FeedbackListParams } from './feedback';
+export { ErrorService } from './errors';

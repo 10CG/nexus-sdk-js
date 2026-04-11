@@ -60,6 +60,18 @@ export class HttpClient {
   private _isOnline: boolean = true;
 
   /**
+   * Optional callback to auto-report API errors to POST /v1/errors.
+   * Set by NexusClient after ErrorService is initialized.
+   * @internal
+   */
+  public onApiError?: (
+    statusCode: number,
+    method: string,
+    url: string,
+    detail: string,
+  ) => void;
+
+  /**
    * Create a new HTTP client.
    *
    * @param config - Fully-resolved SDK configuration (see {@link resolveConfig}).
@@ -339,7 +351,26 @@ export class HttpClient {
 
         // 3. Server responded with an error status code.
         if (error.response) {
-          return Promise.reject(ApiError.fromResponse(error.response));
+          const apiError = ApiError.fromResponse(error.response);
+
+          // Auto-report to POST /v1/errors (fire-and-forget).
+          // Skip reporting errors from the /errors endpoint itself to
+          // avoid infinite loops.
+          const reqUrl = error.config?.url ?? '';
+          if (this.onApiError && !reqUrl.includes('/errors')) {
+            try {
+              this.onApiError(
+                error.response.status,
+                error.config?.method?.toUpperCase() ?? 'UNKNOWN',
+                reqUrl,
+                apiError.message,
+              );
+            } catch {
+              // Never let auto-report failure break the main flow.
+            }
+          }
+
+          return Promise.reject(apiError);
         }
 
         // 4. No response at all -- network-level failure

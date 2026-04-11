@@ -51,6 +51,7 @@ export { KnowledgeService } from './services/knowledge';
 export { ActivityService } from './services/activities';
 export { TenantService } from './services/tenants';
 export { FeedbackService } from './services/feedback';
+export { ErrorService } from './services/errors';
 
 // Service parameter types (defined in service files)
 export type { MemoryListParams, MemoryJournalParams } from './services/memories';
@@ -191,6 +192,14 @@ export type {
   FeedbackResponse,
   FeedbackListItem,
   FeedbackListResponse,
+} from './types';
+
+// Error reporting types
+export type {
+  ErrorType,
+  ErrorSeverity,
+  ErrorReportRequest,
+  ErrorReportResponse,
 } from './types';
 
 // ---------------------------------------------------------------------------

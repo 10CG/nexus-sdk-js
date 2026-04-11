@@ -18,6 +18,7 @@ import { KnowledgeService } from './services/knowledge';
 import { ActivityService } from './services/activities';
 import { TenantService } from './services/tenants';
 import { FeedbackService } from './services/feedback';
+import { ErrorService } from './services/errors';
 
 /**
  * Nexus AI Cognitive Services SDK client.
@@ -66,6 +67,9 @@ export class NexusClient {
   /** Feedback loop — submit ratings and query feedback records (v5.0). */
   public readonly feedback: FeedbackService;
 
+  /** Error reporting — submit structured error reports (US-031). */
+  public readonly errors: ErrorService;
+
   /** @internal Shared HTTP transport. */
   private readonly http: HttpClient;
 
@@ -88,6 +92,23 @@ export class NexusClient {
     this.activities = new ActivityService(this.http);
     this.tenants = new TenantService(this.http);
     this.feedback = new FeedbackService(this.http);
+    this.errors = new ErrorService(this.http);
+
+    // Wire up auto error reporting if enabled.
+    if (resolved.autoErrorReport) {
+      this.http.onApiError = (statusCode, method, url, detail) => {
+        this.errors
+          .submit({
+            error_type: 'api_error',
+            severity: statusCode >= 500 ? 'major' : 'minor',
+            description: `${method} ${url} → ${statusCode}: ${detail}`,
+            request_context: { method, url, status_code: statusCode },
+          })
+          .catch(() => {
+            // Fire-and-forget: never propagate auto-report failures.
+          });
+      };
+    }
   }
 
   /**

@@ -112,3 +112,11 @@ export type {
   FeedbackListItem,
   FeedbackListResponse,
 } from './feedback';
+
+// Error reporting types
+export type {
+  ErrorType,
+  ErrorSeverity,
+  ErrorReportRequest,
+  ErrorReportResponse,
+} from './error';

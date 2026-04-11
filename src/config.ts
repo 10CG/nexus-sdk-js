@@ -57,6 +57,12 @@ export interface NexusConfig {
   retry?: RetryConfig | false;
   /** Offline queue configuration. */
   offline?: OfflineConfig;
+  /**
+   * Automatically report HTTP 4xx/5xx errors to the Nexus error tracking API.
+   * Defaults to `false`. When enabled, failed API responses are submitted to
+   * `POST /v1/errors` in the background (fire-and-forget).
+   */
+  autoErrorReport?: boolean;
 }
 
 /** Fully-resolved cache configuration (all fields required). */
@@ -100,6 +106,8 @@ export interface ResolvedConfig {
   retry: ResolvedRetryConfig | false;
   /** Offline queue configuration (undefined if not provided). */
   offline?: OfflineConfig;
+  /** Whether to auto-report HTTP 4xx/5xx errors. */
+  autoErrorReport: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -197,5 +205,6 @@ export function resolveConfig(userConfig: NexusConfig): ResolvedConfig {
     cache,
     retry,
     offline: userConfig.offline,
+    autoErrorReport: userConfig.autoErrorReport ?? false,
   };
 }
