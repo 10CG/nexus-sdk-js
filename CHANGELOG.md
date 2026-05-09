@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-05-09
+
+### Added
+
+- `ContextRequest.as_of?: string` — RFC 3339 datetime **with required timezone
+  offset** for point-in-time retrieval. When set, semantic/recent layers scope
+  results to facts known at that timestamp (replay past states, deterministic
+  evaluations against a historical snapshot). Naive datetimes are rejected
+  client-side by zod (`.datetime({ offset: true })`) to prevent silent UTC vs
+  local-time drift at the ingest boundary. (US-037 Wave 1 TASK-005, sub-story
+  US-037c, ai R2 D-9)
+
+### Verified — already shipped, now contractually documented
+
+- `RequestOptions.signal?: AbortSignal` — already implemented in `services/base.ts`
+  and threaded through every `HttpClient` verb (`get/post/put/patch/delete`)
+  to `axios`. v1.3.0 promotes this from "incidental" to "part of the public
+  contract" — MCP cancel notifications can now be reliably forwarded from
+  the upcoming `@nexus/mcp-server` (US-037a) into SDK calls. No behaviour
+  change. (R2 ai D-9 SDK side)
+
+### Errata
+
+- 1.2.1 / 1.2.2 were CI auto-publish smoke tests against the Forgejo registry
+  and shipped no functional changes. 1.3.0 is the first feature release after
+  1.2.0.
+
 ## [1.2.0] - 2026-04-08
 
 ### Added
