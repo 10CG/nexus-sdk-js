@@ -123,6 +123,23 @@ export interface ContextRequest {
    * @default 5
    */
   graph_limit?: number;
+  /**
+   * Optional point-in-time anchor for temporal-aware retrieval.
+   * RFC 3339 datetime **with timezone offset** (e.g.
+   * `"2026-01-01T00:00:00+00:00"` or `"2026-01-01T00:00:00Z"`).
+   * When set, layers that support temporal anchoring (semantic, recent)
+   * scope their retrieval to facts known to the system at that
+   * timestamp — useful for replaying past states (debugging,
+   * compliance) or running deterministic evaluations against
+   * a historical snapshot.
+   *
+   * Naive datetimes (no timezone) are rejected client-side by the
+   * zod schema to prevent silent UTC vs local-time mismatches at
+   * the ingest boundary.
+   *
+   * @since 1.3.0 (US-037 Wave 1 TASK-005)
+   */
+  as_of?: string;
 }
 
 // ============== Context Response Sub-types ==============

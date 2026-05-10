@@ -14,4 +14,9 @@ export const contextRequestSchema = z.object({
   history_limit: z.number().int().positive().optional(),
   include_graph: z.boolean().optional(),
   graph_limit: z.number().int().positive().optional(),
+  // RFC 3339 with required timezone offset (`offset: true`). Rejects naive
+  // datetimes like `"2026-01-01T00:00:00"` to surface ingest-boundary
+  // ambiguity early — see ContextRequest.as_of JSDoc.
+  // Added in v1.3.0 (US-037 Wave 1 TASK-005).
+  as_of: z.string().datetime({ offset: true }).optional(),
 });
