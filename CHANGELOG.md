@@ -29,8 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Errata
 
 - 1.2.1 / 1.2.2 were CI auto-publish smoke tests against the Forgejo registry
-  and shipped no functional changes. 1.3.0 is the first feature release after
-  1.2.0.
+  and shipped no functional changes. 1.3.0 is the first feature release with
+  user-visible API additions after 1.2.0.
+- The 1.2.x range did, however, ship `services/errors.ts` (`ErrorService` —
+  client-side error reporting + auto HTTP capture, AC-031-5 / commit
+  `3805228`); this landed without a CHANGELOG entry of its own at the time.
+  Recording it here for retrospective traceability — its public API surface
+  (`client.errors.report(...)`) is unchanged in 1.3.0.
+  (R1 audit fix 2026-05-10, tech-lead minor finding)
 
 ## [1.2.0] - 2026-04-08
 

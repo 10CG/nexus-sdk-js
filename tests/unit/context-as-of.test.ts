@@ -79,6 +79,18 @@ describe('contextRequestSchema.as_of validation', () => {
     expect(result.success).toBe(true);
   });
 
+  it('accepts RFC 3339 datetime with negative UTC offset', () => {
+    // Symmetry with `+08:00` case — boundary guard from R1 qa-engineer audit
+    // (QA-F7, 2026-05-10): the original suite only exercised positive-offset
+    // and `Z`, silently relying on zod's offset matcher being symmetric.
+    // Pin US-Eastern explicitly so a regex tightening cannot regress this.
+    const result = contextRequestSchema.safeParse({
+      user_id: 'u1',
+      as_of: '2026-05-09T10:30:45-05:00',
+    });
+    expect(result.success).toBe(true);
+  });
+
   it('accepts RFC 3339 with fractional seconds', () => {
     const result = contextRequestSchema.safeParse({
       user_id: 'u1',
@@ -205,5 +217,29 @@ describe('ContextService.retrieve as_of round-trip', () => {
     ).rejects.toBeInstanceOf(InputValidationError);
 
     expect(mockAxiosInstance.post).not.toHaveBeenCalled();
+  });
+
+  it('passes as_of body and AbortSignal together (combined feature contract)', async () => {
+    // R1 qa-engineer audit (QA-F8, 2026-05-10): the two v1.3.0 surface area
+    // changes (as_of validated body + RequestOptions.signal contractual
+    // documentation) are independently covered (this file's round-trip block
+    // and services-signal.test.ts) but the combined call path was not pinned.
+    // MCP cancel notifications carrying a temporal-anchored retrieval are the
+    // motivating use case (US-037 R2 ai D-9), so lock the combination.
+    mockAxiosInstance.post.mockResolvedValueOnce(axiosResponse({ profile: {} }));
+
+    const controller = new AbortController();
+    const asOf = '2026-01-01T00:00:00+00:00';
+
+    await client.context.retrieve(
+      { user_id: 'u1', query: 'history', as_of: asOf },
+      { signal: controller.signal },
+    );
+
+    expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+      '/context/retrieve',
+      expect.objectContaining({ user_id: 'u1', as_of: asOf }),
+      expect.objectContaining({ signal: controller.signal }),
+    );
   });
 });
