@@ -14,7 +14,7 @@
  *   ConfigurationError,
  *   NetworkError,
  *   TimeoutError,
- * } from '@nexus/sdk';
+ * } from '@nexusm/sdk';
  * ```
  */
 

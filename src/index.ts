@@ -1,5 +1,5 @@
 /**
- * @nexus/sdk - Nexus AI Cognitive Services SDK
+ * @nexusm/sdk - Nexus AI Cognitive Services SDK
  *
  * Unified entry point that re-exports the public API surface:
  * - {@link NexusClient} - Main client class (primary entry point)
@@ -10,7 +10,7 @@
  *
  * @example
  * ```typescript
- * import { NexusClient } from '@nexus/sdk';
+ * import { NexusClient } from '@nexusm/sdk';
  *
  * const nexus = new NexusClient({
  *   apiKey: process.env.NEXUS_API_KEY!,
@@ -84,7 +84,7 @@ export {
 // Note: The `ApiError` interface from `./types` is intentionally excluded
 // to avoid a naming collision with the `ApiError` class from `./errors`.
 // Consumers who need the raw API error *shape* can import `ApiErrorDetail`
-// instead, or import `ApiError` directly from `@nexus/sdk/types`.
+// instead, or import `ApiError` directly from `@nexusm/sdk/types`.
 // ---------------------------------------------------------------------------
 
 // Common types (excluding ApiError to avoid collision with errors/ApiError class)

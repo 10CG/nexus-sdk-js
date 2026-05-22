@@ -1,4 +1,4 @@
-# @nexus/sdk
+# @nexusm/sdk
 
 Official Node.js SDK for the Nexus AI Cognitive Services Platform.
 
@@ -14,13 +14,13 @@ Official Node.js SDK for the Nexus AI Cognitive Services Platform.
 ## Installation
 
 ```bash
-npm install @nexus/sdk
+npm install @nexusm/sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { NexusClient } from '@nexus/sdk';
+import { NexusClient } from '@nexusm/sdk';
 
 const nexus = new NexusClient({
   apiKey: process.env.NEXUS_API_KEY!,
@@ -228,7 +228,7 @@ NexusError (base)
 ```
 
 ```typescript
-import { ApiError, RateLimitError, NotFoundError } from '@nexus/sdk';
+import { ApiError, RateLimitError, NotFoundError } from '@nexusm/sdk';
 
 try {
   await nexus.memories.get('non-existent-id');

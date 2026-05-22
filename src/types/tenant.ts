@@ -1,5 +1,5 @@
 /**
- * @nexus/sdk - Tenant Types
+ * @nexusm/sdk - Tenant Types
  *
  * Type definitions for the Tenant management service.
  * Supports multi-tenant isolation, API key management,

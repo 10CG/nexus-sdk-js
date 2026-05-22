@@ -1,5 +1,5 @@
 /**
- * @nexus/sdk - Context Retrieval Example
+ * @nexusm/sdk - Context Retrieval Example
  *
  * Demonstrates the three-layer aggregated context retrieval:
  * - recent: Recent conversation history
@@ -7,7 +7,7 @@
  * - graph: Knowledge graph traversal results
  */
 
-import { NexusClient } from '@nexus/sdk';
+import { NexusClient } from '@nexusm/sdk';
 
 const nexus = new NexusClient({
   apiKey: process.env.NEXUS_API_KEY!,

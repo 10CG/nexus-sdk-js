@@ -1,5 +1,5 @@
 /**
- * @nexus/sdk - Activity Types
+ * @nexusm/sdk - Activity Types
  *
  * Type definitions for the Activity Service (US-013 DX Enhancement).
  * Supports passive activity stream ingestion from AI Agents,

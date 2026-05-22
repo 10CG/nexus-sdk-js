@@ -1,5 +1,5 @@
 /**
- * @nexus/sdk - Memory Types
+ * @nexusm/sdk - Memory Types
  *
  * Type definitions for the Memory Service powered by Mem0.
  * Supports episodic, semantic, and procedural memory types

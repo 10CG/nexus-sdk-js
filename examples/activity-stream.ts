@@ -1,5 +1,5 @@
 /**
- * @nexus/sdk - Activity Stream Example
+ * @nexusm/sdk - Activity Stream Example
  *
  * Demonstrates activity logging and batch ingestion:
  * - Single activity logging
@@ -7,7 +7,7 @@
  * - Agent activity reporting pattern
  */
 
-import { NexusClient } from '@nexus/sdk';
+import { NexusClient } from '@nexusm/sdk';
 
 const nexus = new NexusClient({
   apiKey: process.env.NEXUS_API_KEY!,

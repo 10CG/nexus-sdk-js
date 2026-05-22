@@ -1,5 +1,5 @@
 /**
- * @nexus/sdk - Advanced Configuration Example
+ * @nexusm/sdk - Advanced Configuration Example
  *
  * Demonstrates:
  * - Custom cache and retry settings
@@ -18,7 +18,7 @@ import {
   ValidationError,
   NetworkError,
   TimeoutError,
-} from '@nexus/sdk';
+} from '@nexusm/sdk';
 
 // ----------------------------------------------------------------
 // Custom configuration

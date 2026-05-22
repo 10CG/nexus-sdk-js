@@ -1,5 +1,5 @@
 /**
- * @nexus/sdk - Conversation Types
+ * @nexusm/sdk - Conversation Types
  *
  * Type definitions for the Conversation Service powered by Zep OSS.
  * Manages conversation history, messages, and auto-generated summaries.
