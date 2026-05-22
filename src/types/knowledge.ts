@@ -1,5 +1,5 @@
 /**
- * @nexus/sdk - Knowledge Types
+ * @nexusm/sdk - Knowledge Types
  *
  * Type definitions for the Knowledge Service powered by Fast GraphRAG.
  * Supports entity extraction, relationship mapping, and graph traversal queries.

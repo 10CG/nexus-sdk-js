@@ -1,11 +1,11 @@
 /**
- * @nexus/sdk - Quick Start Example
+ * @nexusm/sdk - Quick Start Example
  *
  * The minimal example to get started with Nexus SDK.
  * Initialize the client and retrieve aggregated context in 5 lines.
  */
 
-import { NexusClient } from '@nexus/sdk';
+import { NexusClient } from '@nexusm/sdk';
 
 // Initialize with API key (the only required option)
 const nexus = new NexusClient({

@@ -1,5 +1,5 @@
 /**
- * @nexus/sdk - Type Definitions
+ * @nexusm/sdk - Type Definitions
  *
  * Unified export of all Nexus SDK TypeScript type definitions.
  * These types mirror the Nexus API v2.0 OpenAPI specification

@@ -1,5 +1,5 @@
 /**
- * Integration tests for @nexus/sdk
+ * Integration tests for @nexusm/sdk
  *
  * Tests the full call chain: NexusClient → Service → HttpClient → axios (mocked)
  */

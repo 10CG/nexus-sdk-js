@@ -1,5 +1,5 @@
 /**
- * @nexus/sdk - Context Types
+ * @nexusm/sdk - Context Types
  *
  * Type definitions for the Context Service - the core aggregated context
  * retrieval API used in Chat main flows.

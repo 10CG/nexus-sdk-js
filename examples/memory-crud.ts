@@ -1,5 +1,5 @@
 /**
- * @nexus/sdk - Memory CRUD Example
+ * @nexusm/sdk - Memory CRUD Example
  *
  * Demonstrates the full memory lifecycle:
  * - Create, read, update, delete memories
@@ -7,7 +7,7 @@
  * - Memory journal export
  */
 
-import { NexusClient } from '@nexus/sdk';
+import { NexusClient } from '@nexusm/sdk';
 
 const nexus = new NexusClient({
   apiKey: process.env.NEXUS_API_KEY!,

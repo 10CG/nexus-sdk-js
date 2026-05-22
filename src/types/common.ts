@@ -1,5 +1,5 @@
 /**
- * @nexus/sdk - Common Types
+ * @nexusm/sdk - Common Types
  *
  * Shared type definitions used across all Nexus SDK modules.
  * Based on Nexus API v2.0 OpenAPI specification.

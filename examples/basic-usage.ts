@@ -1,5 +1,5 @@
 /**
- * @nexus/sdk - Basic Usage Example
+ * @nexusm/sdk - Basic Usage Example
  *
  * Demonstrates the core SDK features in under 5 minutes:
  * - Context retrieval (Chat main flow)
@@ -9,7 +9,7 @@
  * - Tenant info
  */
 
-import { NexusClient } from '@nexus/sdk';
+import { NexusClient } from '@nexusm/sdk';
 
 // 1. Initialize the client
 const nexus = new NexusClient({
