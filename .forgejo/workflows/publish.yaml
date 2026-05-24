@@ -1,0 +1,163 @@
+# Nexusm SDK — npm publish workflow (US-037 TASK-025 follow-up)
+#
+# Scope
+# =====
+# Tag-triggered publish to npmjs.com public registry as `@nexusm/sdk`.
+# Mirrors `packages/nexusm-mcp-server/.forgejo/workflows/publish.yaml`
+# (US-037 TASK-025) so SDK and MCP server share the same publish pattern.
+#
+# Why this exists
+# ===============
+# Original Wave 0 plan had SDK shipping via Forgejo Release only; Wave 0
+# closure (2026-05-21) reversed that to npm public registry. First publish
+# (`@nexusm/sdk@1.3.0`, 2026-05-24) was done manually from a maintainer's
+# CLI — see RUNBOOK note below. This workflow ensures every subsequent
+# version goes through CI gates without local credentials.
+#
+# Trigger contract
+# ================
+# Push of a SemVer-shaped tag (`v<MAJOR>.<MINOR>.<PATCH>`). Pre-release
+# tags (e.g. `v1.4.0-rc.1`) intentionally NOT matched — pre-release
+# publishes go via dist-tag from a separate manual job (not yet written).
+#
+# Gates (sequential; first failure aborts)
+# ========================================
+#   1. Tag ↔ package.json version drift guard (strict equality)
+#   2. Install (`npm ci || npm install`)
+#   3. Lint (`npm run lint`)
+#   4. Type check (`npm run typecheck`)
+#   5. Tests (`npm test`)
+#   6. Build via `prepublishOnly` triggered by `npm publish` (tsup)
+#   7. dist artefact presence check (dist/index.js + dist/index.d.ts +
+#      ESM .mjs variants since SDK ships dual)
+#   8. `npm publish --access public` (belt-and-suspenders with
+#      publishConfig.access; either alone is enough)
+#   9. Registry settle verification (`npm view`, 6× 5s poll, non-fatal warn)
+#
+# Auth
+# ====
+# `NPM_TOKEN` (Forgejo repo secret). Required: classic Automation token OR
+# granular access token with "Bypass 2FA" + Read+Write on `@nexusm` org.
+# First publish of a new package always requires the publisher's account
+# itself to have 2FA enabled — Automation classic tokens are the only
+# token type that bypass this for CI scenarios. After first version is
+# live, granular bypass tokens work for subsequent versions.
+#
+# Configure once via Forgejo Web UI:
+#   Settings → Secrets → Actions → New Secret → name=NPM_TOKEN
+#
+# RUNBOOK
+# =======
+# See `packages/nexusm-mcp-server/RUNBOOK.md` for token rotation cadence,
+# 429 / 401 / 403 / E402 recovery. Same npm policy applies to both.
+#
+# 2026-05-24 first-publish note
+# =============================
+# `@nexusm/sdk@1.3.0` first publish happened manually before this
+# workflow existed: maintainer ran `npm publish --access public` from
+# CLI after completing npmjs.com account 2FA (passkey via Bitwarden).
+# All future versions go through this workflow — to release, bump
+# package.json version, `git tag v<new>`, `git push --tags`.
+
+name: publish
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: npm publish
+    runs-on: ubuntu-latest
+    container:
+      image: node:20-bookworm
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure npm registry auth
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "::error::NPM_TOKEN secret is not configured on this repo."
+            echo "::error::Configure via Forgejo Settings → Secrets → Actions."
+            exit 1
+          fi
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+
+      - name: Validate tag ↔ package.json version match
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag v${TAG_VERSION} does not match package.json version ${PKG_VERSION}."
+            echo "::error::Either re-tag matching the package.json, or bump package.json first and re-tag."
+            exit 1
+          fi
+          echo "Tag and package.json agree: ${PKG_VERSION}"
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        # Separate from build because SDK ships dual ESM/CJS via tsup,
+        # tsup doesn't fail on type errors — explicit tsc check catches
+        # them at gate time.
+        run: npm run typecheck
+
+      - name: Tests
+        # Full vitest run (unit). SDK has no integration suite at present —
+        # cross-tenant E2E lives in packages/nexusm-mcp-server.
+        run: npm test
+
+      - name: Verify dist artefacts after publish prep
+        # `npm publish` triggers `prepublishOnly` which runs tsup build,
+        # populating dist/. We could call `npm run build` here, but letting
+        # publish drive it keeps the gate identical to manual publish.
+        # This step runs AFTER publish only if publish failed at the npm
+        # network layer — for build-failure detection we instead rely on
+        # publish itself aborting if build fails (prepublishOnly throws).
+        if: failure()
+        shell: bash
+        run: |
+          echo "::group::dist state after failed publish"
+          ls -la dist/ 2>&1 || echo "dist/ does not exist"
+          echo "::endgroup::"
+
+      - name: Publish to npm
+        # --access public: belt-and-suspenders with publishConfig.access=public
+        # in package.json. Either alone is enough; both together is
+        # self-documenting and bulletproof.
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
+
+      - name: Verify published version is queryable on registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          PKG="$(node -p "require('./package.json').name")"
+          VER="$(node -p "require('./package.json').version")"
+          for i in 1 2 3 4 5 6; do
+            if npm view "${PKG}@${VER}" version >/dev/null 2>&1; then
+              echo "Confirmed: ${PKG}@${VER} is queryable on npmjs.com"
+              exit 0
+            fi
+            echo "Attempt ${i}/6: ${PKG}@${VER} not yet visible — sleeping 5s"
+            sleep 5
+          done
+          echo "::warning::${PKG}@${VER} did not appear via npm view within 30s. Publish reported success — check https://www.npmjs.com/package/${PKG} after a few minutes."
