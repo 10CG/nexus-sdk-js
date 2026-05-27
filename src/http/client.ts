@@ -7,14 +7,9 @@
  * every failure surfaces as a typed {@link NexusError} subclass.
  */
 
-import axios, {
-  type AxiosInstance,
-  type AxiosRequestConfig,
-  type AxiosError,
-} from 'axios';
+import axios, { type AxiosInstance, type AxiosError } from 'axios';
 
 import type { ResolvedConfig } from '../config';
-import type { OfflineConfig } from '../types/common';
 import { NetworkError, TimeoutError } from '../errors/base';
 import { ApiError } from '../errors/api';
 import { CacheManager, isCacheablePost } from './cache';
