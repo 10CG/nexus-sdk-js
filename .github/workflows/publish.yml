@@ -1,0 +1,122 @@
+# Publish `@nexusm/sdk` to npmjs.com on tag push.
+#
+# Runs on the GitHub mirror (`10CG/nexus-sdk-js`), not on the Forgejo
+# canonical, because npm publish is cross-border and Aether CI runners
+# intentionally don't run cross-border traffic. The Forgejo `mirror.yml`
+# pushes tags here; this workflow does the publish.
+#
+# Triggered by:
+#   - push of any tag matching `v*` (e.g. `v1.4.0`)
+#   - workflow_dispatch (manual rerun if a publish failed mid-flight)
+#
+# Required secret on this GitHub repo: `NPM_TOKEN` — npm Automation Token
+# (Settings → Access Tokens → "Automation" type, 90d max lifetime).
+# Granular tokens scoped to `@nexusm` org R+W also work.
+#
+# Landmines (see RUNBOOK.md):
+#   - scoped first-publish → `--access public` (belt-and-suspenders with
+#     package.json `publishConfig.access`)
+#   - lockfile drift → `npm ci` fails loud, intentional
+#   - `prepublishOnly: npm run build` is in package.json; we still do
+#     explicit build step so a build failure shows up as its own step
+#     (easier to diagnose than buried inside the publish step output)
+
+name: publish
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to republish (e.g. v1.4.0) — use only to retry a failed publish'
+        required: true
+
+permissions:
+  contents: read
+  id-token: write  # required for npm provenance attestation (--provenance)
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@nexusm'
+          always-auth: true
+
+      - name: Verify tag matches package.json version
+        # Prevents accidental publish of a stale version when the tag was
+        # created on a commit that didn't bump package.json.
+        run: |
+          set -euo pipefail
+          PKG_VER=$(node -p "require('./package.json').version")
+          REF="${{ github.event.inputs.tag || github.ref_name }}"
+          TAG_VER="${REF#v}"
+          echo "package.json version: $PKG_VER"
+          echo "tag version:          $TAG_VER"
+          if [ "$PKG_VER" != "$TAG_VER" ]; then
+            echo "::error::Tag $REF does not match package.json version $PKG_VER"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        # `tsup` per package.json; outputs to dist/.
+        # Also wired as `prepublishOnly`, but running explicitly here so a
+        # build failure surfaces as its own step.
+        run: npm run build
+
+      - name: Verify dist/ contents
+        run: |
+          set -euo pipefail
+          if [ ! -d dist ] || [ -z "$(ls -A dist 2>/dev/null)" ]; then
+            echo "::error::dist/ missing or empty — build failed silently?"
+            exit 1
+          fi
+          # SDK ships ESM + CJS + .d.ts via tsup; smoke-check for at least
+          # one .js and one .d.ts file.
+          JS_COUNT=$(find dist -maxdepth 2 -name '*.js' | wc -l)
+          DTS_COUNT=$(find dist -maxdepth 2 -name '*.d.ts' | wc -l)
+          if [ "$JS_COUNT" -eq 0 ]; then
+            echo "::error::no .js files in dist/"
+            exit 1
+          fi
+          if [ "$DTS_COUNT" -eq 0 ]; then
+            echo "::error::no .d.ts files in dist/ — TypeScript declarations not emitted"
+            exit 1
+          fi
+          echo "dist/ OK: ${JS_COUNT} .js files, ${DTS_COUNT} .d.ts files"
+          ls -la dist/
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --provenance
+
+      - name: Verify registry visibility
+        run: |
+          set -euo pipefail
+          VER=$(node -p "require('./package.json').version")
+          for i in 1 2 3 4 5; do
+            CODE=$(curl -sI --max-time 8 "https://registry.npmjs.org/@nexusm/sdk/${VER}" | head -1 | awk '{print $2}')
+            if [ "$CODE" = "200" ]; then
+              echo "@nexusm/sdk@${VER} live on registry."
+              exit 0
+            fi
+            echo "Attempt $i: HTTP $CODE — retrying in 5s"
+            sleep 5
+          done
+          echo "::error::registry returned non-200 for @nexusm/sdk@${VER} after 5 attempts"
+          exit 1
