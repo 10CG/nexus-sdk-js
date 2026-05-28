@@ -5,7 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.3.1] - 2026-05-28
+## [1.3.2] - 2026-05-28
+
+### Added
+
+- `repository`, `homepage`, `bugs` fields in `package.json` — required for
+  Sigstore provenance attestation to validate. `repository.url` points to the
+  GitHub mirror (`10CG/nexus-sdk-js`) so npm provenance verification can
+  cross-check the artifact against the GitHub Actions build context. Forgejo
+  (`forgejo.10cg.pub/10CG/nexus-sdk-js`) remains the canonical source of
+  truth; `bugs.url` points there since issues are filed on Forgejo.
+
+### Changed
+
+- This is the first release with end-to-end automated publish via GitHub
+  Actions (FU-MCP-SERVER-GITHUB-MIRROR). No functional SDK changes.
+
+### Notes
+
+- `1.3.1` was attempted but rejected by npm (`E422 Unprocessable Entity`,
+  provenance bundle could not validate empty `repository.url`). The version
+  was never accepted into the registry; `1.3.2` is the first published
+  artifact of this batch.
+
+## [1.3.1] - 2026-05-28 [UNPUBLISHED]
+
+Attempted publish via GitHub Actions; rejected by npm provenance validation
+(see `1.3.2` notes above). Tag `v1.3.1` retained as historical record of the
+failed attempt; no registry artifact exists for this version.
 
 ### Changed
 
@@ -14,8 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Tag push `v*` on Forgejo `main` → mirror force-pushes to GitHub → GitHub
   Actions `publish.yml` runs `npm publish --access public --provenance`.
   Local CLI publish remains documented in [`RUNBOOK.md`](./RUNBOOK.md) as a
-  fallback. This release is the first end-to-end validation of the pipeline;
-  no functional SDK changes.
+  fallback.
 
 ## [1.3.0] - 2026-05-09
 
