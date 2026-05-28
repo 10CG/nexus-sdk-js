@@ -30,7 +30,14 @@ on:
     branches: [main]
     tags: ['v*']
   schedule:
-    - cron: '29 * * * *'
+    # Every 6h at :29 (00:29, 06:29, 12:29, 18:29 UTC). Lowered from hourly
+    # after push-triggered runs proved reliable end-to-end (FU-MCP-SERVER-
+    # GITHUB-MIRROR closure). Cron is purely a safety net for missed push
+    # events; 6h matches the bound on "how stale a mirror is allowed to be
+    # if both push paths fail". Tracked: FU-MIRROR-PLATFORM-NATIVE-PUSH —
+    # full migration to Forgejo built-in Push Mirror eliminates this
+    # workflow entirely.
+    - cron: '29 */6 * * *'
   workflow_dispatch: {}
 
 jobs:
