@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-05-28
+
+### Changed
+
+- **Release pipeline** — `@nexusm/sdk` releases are now automated via GitHub
+  Actions on the `10CG/nexus-sdk-js` GitHub mirror (FU-MCP-SERVER-GITHUB-MIRROR).
+  Tag push `v*` on Forgejo `main` → mirror force-pushes to GitHub → GitHub
+  Actions `publish.yml` runs `npm publish --access public --provenance`.
+  Local CLI publish remains documented in [`RUNBOOK.md`](./RUNBOOK.md) as a
+  fallback. This release is the first end-to-end validation of the pipeline;
+  no functional SDK changes.
+
 ## [1.3.0] - 2026-05-09
 
 ### Added
