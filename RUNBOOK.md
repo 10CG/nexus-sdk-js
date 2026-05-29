@@ -6,11 +6,60 @@
 
 ---
 
-## 0. RELEASE PROCEDURE (canonical — follow in order)
+## 0. RELEASE PROCEDURE
 
-> **Why this section exists**: `@nexusm/sdk@1.3.0` first publish (2026-05-24) took 5 iterations (account 2FA setup / Bitwarden passkey / scoped first-publish / `--access public` flag / etc.). This procedure consolidates every known landmine into a single sequential checklist so v1.3.1+ is a 5-minute exercise.
+> **⚡ PRIMARY PATH IS NOW AUTOMATED (since 2026-05-29, FU-MCP-SERVER-GITHUB-MIRROR closed).** Releases publish via **GitHub Actions** on the `github.com/10CG/nexus-sdk-js` mirror. You do **not** run `npm publish` by hand anymore. See **§0.A Automated release (primary)** below. The manual local-CLI procedure (§0.1–§0.6) is retained as a **fallback** for when GitHub Actions is unavailable.
 >
-> **Architecture context**: npm publish runs from **a developer's local machine, not from Aether CI runner**. Aether `docs/guides/forgejo-ci-internal-mirror.md` (Aether #137) explicit design goal is "CI 热路径不再有任何跨境请求"; publishing to npmjs.com is cross-border and intentionally not supported on Aether runners. Future: when this package gets mirrored to `github.com/10CG/nexus-sdk-js`, `.github/workflows/publish.yml` will automate this; until then, follow this manual procedure.
+> **Why the manual section still exists**: `@nexusm/sdk@1.3.0` first publish (2026-05-24) took 5 iterations (account 2FA setup / Bitwarden passkey / scoped first-publish / `--access public` flag / etc.). The landmine checklist below stays useful as a fallback and as the canonical record of npm publish gotchas (the GitHub Actions workflow encodes guards for the same landmines).
+>
+> **Architecture context**: npm publish is cross-border and intentionally **not** run on Aether CI runners (Aether `docs/guides/forgejo-ci-internal-mirror.md` #137 design goal "CI 热路径不再有任何跨境请求"). The GitHub Actions mirror runs the publish on GitHub's own infra, which is cross-border-OK by design.
+
+### 0.A Automated release (PRIMARY — use this)
+
+Releases are published by `.github/workflows/publish.yml` on the GitHub mirror, triggered by a `v*` tag. Forgejo's native Push Mirror (Repo Settings → Mirroring) syncs `main` + tags to GitHub at ms-latency.
+
+**Procedure (≈3 min of human work, rest is automated):**
+
+```bash
+cd /home/dev/nexus/packages/nexus-sdk-js
+
+# 1. Bump version in package.json + package-lock.json (both the top-level
+#    "version" and the packages[""].version entry) + add a CHANGELOG.md entry.
+# 2. Open a PR, merge to main. (Push Mirror auto-syncs main → GitHub.)
+
+# 3. Tag the merge commit and push the tag:
+git checkout main && git pull --ff-only
+git tag -a vX.Y.Z -m "vX.Y.Z — <summary>" <merge-sha>
+git push origin vX.Y.Z
+
+# 4. The tag reaches GitHub via Push Mirror (seconds), which triggers
+#    .github/workflows/publish.yml. Monitor the run:
+#      https://github.com/10CG/nexus-sdk-js/actions
+
+# 5. Verify (the workflow also self-verifies registry visibility):
+curl -sI --max-time 8 "https://registry.npmjs.org/@nexusm/sdk/X.Y.Z" | head -1   # 200
+curl -s  --max-time 8 "https://registry.npmjs.org/@nexusm/sdk/latest" \
+  | python3 -c "import json,sys;print('latest:',json.load(sys.stdin).get('version'))"
+```
+
+**What the workflow guards (mirrors §0.5 landmines):**
+
+| Guard | Landmine covered |
+|-------|------------------|
+| tag/package.json version equality check | mismatched tag vs version |
+| `npm ci` (strict lockfile) | Landmine D/I |
+| `npm run build` + dist `.js`/`.d.ts` presence check | empty tarball (Landmine D) |
+| `npm publish --access public` | scoped first-publish (Landmine A) |
+| `--provenance` (+ `id-token: write`) | supply-chain attestation (requires `repository.url` → GitHub mirror in package.json) |
+| registry curl retry × 5 | CDN propagation |
+
+**Requirements on the GitHub mirror** (one-time, already configured): `NPM_TOKEN` secret = npm Granular Token with **Packages-and-scopes → Read and write** on the `@nexusm` scope + **Bypass 2FA** (NOT Organizations-tier R+W — that does not grant publish). `package.json` `repository.url` must point to the GitHub mirror for provenance to validate.
+
+**First validated**: `@nexusm/sdk@1.3.3` (2026-05-29) — Sigstore provenance attached, `dist.attestations` present.
+
+---
+
+> **§0.1–§0.6 below = FALLBACK manual procedure.** Use only if GitHub Actions is down or you must publish out-of-band.
 
 ### 0.1 Pre-flight (1 minute)
 
@@ -104,11 +153,11 @@ node -e "import('@nexusm/sdk').then(m => console.log('NexusClient ok:', typeof m
 
 ### 0.6 Quarterly re-verification (every 90 days)
 
-NPM_TOKEN was rotated for `nexusm-mcp-server` repo on Forgejo (per mcp-server RUNBOOK §2). SDK doesn't have a Forgejo `NPM_TOKEN` secret (CI publish workflow removed per project leader 2026-05-27 decision; publish goes via local CLI). When the GitHub mirror lands (FU-MCP-SERVER-GITHUB-MIRROR pattern applied to SDK), the GitHub-side `NPM_TOKEN` should be on the same 90-day rotation.
+The `NPM_TOKEN` used by the automated pipeline now lives as a secret on the **GitHub mirror** (`github.com/10CG/nexus-sdk-js` → Settings → Secrets → Actions), NOT on Forgejo. It is a npm Granular Token (Packages-and-scopes R+W on `@nexusm`, Bypass 2FA) with a 90-day max lifetime — put it on a quarterly rotation. After rotating, cut a trivial patch release (or re-run the latest `publish` workflow via workflow_dispatch) to confirm the new token works end-to-end. **Don't defer verification to a real release** — fresh tokens have failed at publish time before.
 
-### 0.7 Future automation
+### 0.7 Active automation (PRIMARY path — see §0.A)
 
-When `nexus-sdk-js` gets mirrored to `github.com/10CG/nexus-sdk-js` (tracked alongside FU-MCP-SERVER-GITHUB-MIRROR in nexus phase-d-archive-checklist.md §12.B), `.github/workflows/publish.yml` on the mirror will automate §0.2-§0.4 on tag push. Until then, this section is the canonical path.
+✅ **Done 2026-05-29** (FU-MCP-SERVER-GITHUB-MIRROR + FU-MIRROR-PLATFORM-NATIVE-PUSH closed). `nexus-sdk-js` is mirrored to `github.com/10CG/nexus-sdk-js` via **Forgejo native Push Mirror** (replaced the earlier custom `.forgejo/workflows/mirror.yml`, which was deleted). `.github/workflows/publish.yml` on the mirror auto-publishes on `v*` tag push. **§0.A is now the primary release path**; §0.1–§0.6 are the manual fallback. First validated release through the pipeline: `@nexusm/sdk@1.3.3`.
 
 ---
 
