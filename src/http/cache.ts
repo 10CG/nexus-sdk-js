@@ -98,8 +98,21 @@ function stableHash(value: unknown): string {
  * ```
  */
 export class CacheManager {
-  /** Underlying LRU cache instance. */
-  private readonly cache: LRUCache<string, unknown>;
+  /**
+   * Underlying LRU cache instance.
+   *
+   * The value type is `NonNullable<unknown>` (≡ `{}`, any non-null/
+   * non-undefined value) rather than `unknown` because `lru-cache` v10+
+   * constrains its value parameter to `V extends {}` — `unknown` does not
+   * satisfy that constraint (TS2344). `NonNullable<unknown>` is used instead
+   * of the bare `{}` literal so it reads as intentional and doesn't trip
+   * `@typescript-eslint/no-empty-object-type`. Cache values are never null/
+   * undefined by construction (`get` returns `undefined` only on a miss, and
+   * we never `set` a nullish value). The public API still exposes `unknown`
+   * via the generic `get<T>` and `set(value: unknown)` signatures; the
+   * narrowing happens at those boundaries.
+   */
+  private readonly cache: LRUCache<string, NonNullable<unknown>>;
 
   /** Whether caching is active. */
   private readonly enabled: boolean;
@@ -119,10 +132,10 @@ export class CacheManager {
     if (config === false) {
       this.enabled = false;
       // Minimal placeholder -- never actually used
-      this.cache = new LRUCache<string, unknown>({ max: 1 });
+      this.cache = new LRUCache<string, NonNullable<unknown>>({ max: 1 });
     } else {
       this.enabled = true;
-      this.cache = new LRUCache<string, unknown>({
+      this.cache = new LRUCache<string, NonNullable<unknown>>({
         max: config.max,
         ttl: config.ttl * 1000, // seconds -> milliseconds
       });
@@ -187,7 +200,10 @@ export class CacheManager {
     if (!this.enabled) {
       return;
     }
-    this.cache.set(key, value);
+    // The public contract accepts `unknown`, but the underlying cache stores
+    // non-null values (see the `cache` field doc). Callers never cache a
+    // nullish value; cast at this single boundary.
+    this.cache.set(key, value as NonNullable<unknown>);
   }
 
   /**

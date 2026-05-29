@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.3] - 2026-05-29
+
+### Fixed
+
+- `src/http/cache.ts` — resolved 3 `TS2344` errors (`Type 'unknown' does not
+  satisfy the constraint '{}'`) on the internal `LRUCache` value type
+  parameter. `lru-cache` v10+ constrains its value parameter to `V extends {}`;
+  `unknown` does not satisfy it. Changed the internal cache value type from
+  `unknown` to `NonNullable<unknown>` (≡ `{}`, but doesn't trip
+  `@typescript-eslint/no-empty-object-type`), with a single narrowing cast at
+  the `set` boundary. Public API (`get<T>`, `set(value: unknown)`) unchanged —
+  no consumer-visible behaviour change. `tsc --noEmit` is now clean (was red
+  while `tsup` build stayed green, masking the debt). Closes
+  FU-SDK-CACHE-TS-TYPE-FIX.
+
 ## [1.3.2] - 2026-05-28
 
 ### Added
