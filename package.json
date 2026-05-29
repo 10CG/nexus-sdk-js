@@ -1,6 +1,6 @@
 {
   "name": "@nexusm/sdk",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Official Node.js SDK for Nexus AI Cognitive Services Platform",
   "repository": {
     "type": "git",
