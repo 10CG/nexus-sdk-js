@@ -107,16 +107,10 @@ export type {
   ContextDepth,
   ContextDepthPreset,
   ContextRequest,
-  ContextMemory,
-  ContextProfile,
-  ContextMessage,
-  ContextHistory,
-  ContextEntity,
-  ContextRelation,
-  ContextGraph,
-  ContextMeta,
+  ProfileMemory,
+  ConversationMessage,
+  ContextGraphEntity,
   ContextRetrieveResponse,
-  OwnerType,
 } from './types';
 export { DEPTH_PRESETS } from './types';
 
@@ -127,6 +121,7 @@ export type {
   MemoryUpdate,
   MemorySearch,
   MemorySearchResult,
+  SearchResult,
   MemoryList,
   JournalEntry,
   JournalResponse,

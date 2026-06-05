@@ -142,134 +142,104 @@ export interface ContextRequest {
   as_of?: string;
 }
 
-// ============== Context Response Sub-types ==============
+// ============== Context Response Element Types ==============
+// v2.0.0 BREAKING (contract reconciliation, ADR-003): canonical = backend flat
+// element shapes. Replaces the old nested ContextProfile/ContextHistory/
+// ContextGraph containers + ContextMemory/ContextMessage/ContextEntity/
+// ContextRelation/ContextMeta sub-types (removed).
 
 /**
- * A single memory item within the context profile.
- * Sourced from Mem0 memory store.
+ * A user profile memory element (`ContextRetrieveResponse.profile[]`).
+ * Mirrors backend `ProfileMemory`.
  */
-export interface ContextMemory {
-  /** Unique memory identifier (UUID) */
-  id: string;
+export interface ProfileMemory {
+  /** Memory identifier */
+  memory_id: string;
   /** Memory content text */
   content: string;
-  /** Type of memory */
-  memory_type: 'episodic' | 'semantic' | 'procedural';
+  /** Memory type */
+  memory_type: string;
+  /** Optional category */
+  category?: string | null;
   /** Relevance score from similarity search */
-  score?: number;
-  /** Timestamp when the memory was created (ISO 8601) */
-  created_at: string;
+  similarity_score?: number | null;
+  /** Arbitrary metadata */
+  metadata?: Record<string, unknown>;
 }
 
 /**
- * User profile memories section of the context response.
- * Contains memories retrieved from Mem0.
+ * A conversation message element (`ContextRetrieveResponse.history[]`).
+ * Mirrors backend `ConversationMessage`.
  */
-export interface ContextProfile {
-  /** List of relevant memories */
-  memories: ContextMemory[];
-  /** Total number of memories the user has */
-  total_count: number;
-}
-
-/** A single message within conversation history. */
-export interface ContextMessage {
+export interface ConversationMessage {
+  /** Message identifier */
+  message_id: string;
   /** Message role */
   role: 'user' | 'assistant' | 'system' | 'tool';
   /** Message content text */
   content: string;
-  /** Timestamp when the message was created (ISO 8601) */
+  /** Creation timestamp (ISO 8601) */
   created_at: string;
+  /** Arbitrary metadata */
+  metadata?: Record<string, unknown>;
 }
 
 /**
- * Conversation history section of the context response.
- * Sourced from Zep conversation store.
+ * A knowledge graph entity element (`ContextRetrieveResponse.graph[]`).
+ * Mirrors backend `ContextGraphEntity`.
  */
-export interface ContextHistory {
-  /** List of recent messages */
-  messages: ContextMessage[];
-  /** Auto-generated conversation summary (if available) */
-  summary?: string;
-  /** Session identifier */
-  session_id?: string;
-}
-
-/** Entity ownership type in the knowledge graph */
-export type OwnerType = 'agent' | 'user';
-
-/**
- * A knowledge entity within the graph context.
- * Sourced from Fast GraphRAG.
- */
-export interface ContextEntity {
-  /** Unique entity identifier (UUID) */
-  id: string;
+export interface ContextGraphEntity {
+  /** Entity identifier */
+  entity_id: string;
   /** Entity display name */
   name: string;
-  /** Entity type classification (e.g., Person, Organization) */
-  entity_type: string;
+  /** Entity type classification */
+  type: string;
   /** Entity description */
-  description?: string;
-  /** Additional entity properties */
-  properties?: Record<string, unknown>;
-  /** Ownership type: agent=public knowledge, user=private social graph */
-  owner_type?: OwnerType;
-}
-
-/** A relationship between two entities in the knowledge graph. */
-export interface ContextRelation {
-  /** Source entity name */
-  source: string;
-  /** Relationship type label */
-  relation: string;
-  /** Target entity name */
-  target: string;
-  /** Relationship weight/strength */
-  weight?: number;
-}
-
-/**
- * Knowledge graph section of the context response.
- * Sourced from Fast GraphRAG.
- */
-export interface ContextGraph {
-  /** List of relevant entities */
-  entities: ContextEntity[];
-  /** List of relationships between entities */
-  relations: ContextRelation[];
-}
-
-/**
- * Retrieval performance metadata.
- * Provides timing information for each retrieval layer.
- */
-export interface ContextMeta {
-  /** Total retrieval time in milliseconds */
-  took_ms: number;
-  /** Memory retrieval time in milliseconds */
-  memory_took_ms?: number;
-  /** History retrieval time in milliseconds */
-  history_took_ms?: number;
-  /** Graph retrieval time in milliseconds */
-  graph_took_ms?: number;
-  /** Original query text */
-  query?: string;
+  description?: string | null;
+  /** Relationships (free-form objects) */
+  relationships?: Array<Record<string, unknown>>;
+  /** Relevance score for unified ranking */
+  relevance_score?: number;
 }
 
 // ============== Context Retrieve Response ==============
 
 /**
  * Aggregated context response from the retrieve endpoint.
- * Contains parallel-fetched results from all requested layers.
+ *
+ * **v2.0.0 BREAKING (contract reconciliation, ADR-003):** canonical = backend
+ * flat-array shape. `profile`/`history`/`graph` are now flat arrays (not nested
+ * `{memories,...}` containers); `meta` is removed (use `total_latency_ms`);
+ * top-level diagnostic/identity fields are surfaced directly.
  */
 export interface ContextRetrieveResponse {
-  /** User profile memories from Mem0 */
-  profile?: ContextProfile;
-  /** Conversation history from Zep */
-  history?: ContextHistory;
-  /** Knowledge graph data from GraphRAG */
-  graph?: ContextGraph;
-  /** Retrieval performance metadata */
-  meta?: ContextMeta;
+  /** Unique retrieval ID for feedback association (PUT /feedback/{retrieve_id}, 7d window) */
+  retrieve_id?: string | null;
+  /** User profile memories (flat array) */
+  profile?: ProfileMemory[] | null;
+  /** Conversation history (flat array) */
+  history?: ConversationMessage[] | null;
+  /** Knowledge graph entities (flat array) */
+  graph?: ContextGraphEntity[] | null;
+  /** AI-synthesized user profile (free-form key-value) */
+  ai_profile?: Record<string, unknown> | null;
+  /** Retrieval completion timestamp (ISO 8601) */
+  retrieved_at: string;
+  /** Total retrieval time in milliseconds */
+  total_latency_ms: number;
+  /** Partial-failure errors (sub-service name -> message) */
+  errors?: Record<string, string> | null;
+  /** A/B experiment group assignment (US-030) */
+  experiment_group?:
+    | 'control'
+    | 'treatment'
+    | 'override_vector'
+    | 'override_rerank'
+    | 'error'
+    | null;
+  /** Count of memories removed by US-035 temporal validity filter (diagnostic; 0 = none filtered) */
+  temporal_filtered_count?: number | null;
+  /** Echoes the request `as_of` anchor (null for current-time retrieval) */
+  as_of?: string | null;
 }

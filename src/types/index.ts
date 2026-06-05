@@ -29,17 +29,11 @@ export type {
   ContextDepth,
   ContextDepthPreset,
   ContextRequest,
-  ContextMemory,
-  ContextProfile,
-  ContextMessage,
-  ContextHistory,
-  ContextEntity,
-  ContextRelation,
-  ContextGraph,
-  ContextMeta,
+  ProfileMemory,
+  ConversationMessage,
+  ContextGraphEntity,
   ContextRetrieveResponse,
 } from './context';
-export type { OwnerType } from './context';
 export { DEPTH_PRESETS } from './context';
 
 // Memory types
@@ -49,6 +43,7 @@ export type {
   MemoryUpdate,
   MemorySearch,
   MemorySearchResult,
+  SearchResult,
   MemoryList,
   JournalEntry,
   JournalResponse,
