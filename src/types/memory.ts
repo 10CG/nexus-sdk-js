@@ -102,15 +102,42 @@ export interface MemorySearch {
 }
 
 /**
+ * A single semantic-search result element (`MemorySearchResult.results[]`).
+ * Mirrors backend `SearchResult` (flat — not a nested `Memory` object).
+ *
+ * @since 2.0.0
+ */
+export interface SearchResult {
+  /** Memory identifier */
+  memory_id: string;
+  /** Memory content text */
+  content: string;
+  /** Memory type */
+  memory_type: string;
+  /** Similarity score (0..1) */
+  similarity: number;
+  /** Arbitrary metadata */
+  metadata?: Record<string, unknown>;
+}
+
+/**
  * Response from a semantic memory search operation.
+ *
+ * **v2.0.0 BREAKING (contract reconciliation, ADR-003):** canonical = backend
+ * `MemorySearchResponse`. `results` is now a flat `SearchResult[]` (not
+ * `Memory[]`); `took_ms` renamed `search_time_ms`; `total_found` added.
+ * (Backend response_model is named `MemorySearchResponse`; this SDK type keeps
+ * the name `MemorySearchResult` — shapes are identical.)
  */
 export interface MemorySearchResult {
-  /** Array of matching memories (with score populated) */
-  results: Memory[];
+  /** Matching results (flat) */
+  results: SearchResult[];
   /** Original search query */
   query: string;
+  /** Total number of matches found */
+  total_found: number;
   /** Search execution time in milliseconds */
-  took_ms: number;
+  search_time_ms: number;
 }
 
 // ============== Memory List ==============

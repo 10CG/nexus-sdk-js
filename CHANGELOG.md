@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-06-05
+
+### Changed — BREAKING (contract reconciliation, ADR-003)
+
+Canonical response shape is now the backend **flat-array** wire shape
+(`ContextResponse` / `MemorySearchResponse` `response_model`). The previously
+declared nested SDK shapes were a structural drift; there is no additive path,
+so this is a single major bump (no transitional/dual shape). See nexus
+`openspec/changes/context-response-contract-reconciliation/` + ADR-003.
+
+**`ContextRetrieveResponse`** — was nested `{profile,history,graph,meta}`, now flat:
+
+| 1.x (removed) | 2.0.0 (canonical) |
+|---|---|
+| `profile: ContextProfile` (`{memories, total_count}`) | `profile: ProfileMemory[] \| null` |
+| `history: ContextHistory` (`{messages, summary, session_id}`) | `history: ConversationMessage[] \| null` |
+| `graph: ContextGraph` (`{entities, relations}`) | `graph: ContextGraphEntity[] \| null` |
+| `meta: ContextMeta` (`{took_ms, ...}`) | **removed** → use `total_latency_ms` |
+| — | **added** `retrieve_id`, `ai_profile` (`Record<string,unknown>`), `retrieved_at`, `total_latency_ms`, `errors`, `experiment_group`, `temporal_filtered_count`, `as_of` |
+
+Element key renames: `ContextMemory.id/score` → `ProfileMemory.memory_id/similarity_score`;
+`ContextMessage` → `ConversationMessage` (+ `message_id`); `ContextEntity.entity_type`
+→ `ContextGraphEntity.type` (+ `relationships`, `relevance_score`).
+
+**`MemorySearchResult`** — was nested `Memory[]`, now flat:
+
+| 1.x (removed) | 2.0.0 (canonical) |
+|---|---|
+| `results: Memory[]` | `results: SearchResult[]` (`{memory_id, content, memory_type, similarity, metadata}`) |
+| `took_ms: number` | `search_time_ms: number` |
+| — | **added** `total_found: number` |
+
+### Removed
+
+- Types `ContextMemory`, `ContextProfile`, `ContextMessage`, `ContextHistory`,
+  `ContextEntity`, `ContextRelation`, `ContextGraph`, `ContextMeta`, `OwnerType`.
+
+### Added
+
+- Types `ProfileMemory`, `ConversationMessage`, `ContextGraphEntity`, `SearchResult`.
+- `tests/unit/context-contract-shape.test.ts` — locks the flat shape against regression.
+
+### Migration
+
+Consumers reading `resp.profile.memories` / `resp.history.messages` /
+`resp.graph.entities` must switch to iterating `resp.profile` / `resp.history` /
+`resp.graph` directly; `resp.meta.took_ms` → `resp.total_latency_ms`;
+`searchResult.took_ms` → `searchResult.search_time_ms`; `results[].memory.*`
+→ `results[].*` (flat). Tracked for Kairos in [10CG/Kairos#52](https://forgejo.10cg.pub/10CG/Kairos/issues/52).
+
 ## [1.3.3] - 2026-05-29
 
 ### Fixed
