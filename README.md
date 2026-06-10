@@ -165,10 +165,13 @@ const graph = await nexus.knowledge.query({
 
 | Method | Description |
 |--------|-------------|
-| `createEntity(data)` | Create a new entity in the knowledge graph |
-| `listEntities(params?)` | List entities with optional filtering |
+| `listEntities(params)` | List entities for a user (`user_id` required) |
 | `query(request)` | BFS graph traversal from a named entity |
-| `extract(request)` | Extract entities and relationships from text |
+| `extract(request)` | Extract entities and relationships from text (also how entities are created) |
+
+> v3.0.0: `createEntity()` was removed — the backend has no
+> `POST /knowledge/entities` route (the SDK method 404'd at runtime).
+> Entities are created via `extract()`.
 
 ### Activity Service
 
@@ -202,14 +205,14 @@ Tenant profile and usage management. Identity is derived from the API key.
 const tenant = await nexus.tenants.me();
 console.log(tenant.name, tenant.tier);
 
-const usage = await nexus.tenants.usage();
-console.log('Memories:', usage.memories_count);
+const usage = await nexus.tenants.usage('week');
+console.log(`API calls: ${usage.api_calls} (${usage.success_rate}% ok)`);
 ```
 
 | Method | Description |
 |--------|-------------|
-| `me()` | Retrieve the current tenant profile |
-| `usage()` | Retrieve resource usage statistics |
+| `me()` | Retrieve the current tenant profile (flat counts + `quota_remaining`) |
+| `usage(period?)` | Usage statistics for `'day'` (default) / `'week'` / `'month'` — 13-field `UsageStats` |
 
 ## Error Handling
 

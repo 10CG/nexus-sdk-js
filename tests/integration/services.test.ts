@@ -308,7 +308,23 @@ describe('Integration: NexusClient → Services → HttpClient', () => {
     });
 
     it('usage() calls GET /tenants/me/usage', async () => {
-      const usage = { api_calls_today: 100, memories_count: 50 };
+      // Full 13-field UsageStatsResponse wire shape (audit R1 amendment: the
+      // previous 2-field mock carried the deleted phantom `api_calls_today`).
+      const usage = {
+        tenant_id: '11111111-2222-3333-4444-555555555555',
+        period: 'day',
+        api_calls: 100,
+        success_rate: 99.5,
+        avg_latency_ms: 42.0,
+        p50_latency_ms: 35.0,
+        p95_latency_ms: 90.0,
+        p99_latency_ms: 120.0,
+        memories_count: 50,
+        conversations_count: 10,
+        graph_nodes_count: 5,
+        storage_used_bytes: 1024,
+        storage_limit_bytes: 0,
+      };
       mockAxiosInstance.get.mockResolvedValueOnce(axiosResponse(usage));
 
       const result = await client.tenants.usage();
