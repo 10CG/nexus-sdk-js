@@ -1,11 +1,7 @@
 import { z } from 'zod';
 
-export const entityCreateSchema = z.object({
-  name: z.string().min(1),
-  entity_type: z.string().min(1),
-  description: z.string().optional(),
-  properties: z.record(z.unknown()).optional(),
-});
+// v3.0.0: entityCreateSchema removed with KnowledgeService.createEntity()
+// (phantom POST /knowledge/entities — no backend route; Q8-A).
 
 export const graphQueryRequestSchema = z.object({
   entity_name: z.string().min(1),
