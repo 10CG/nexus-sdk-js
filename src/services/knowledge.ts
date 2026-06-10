@@ -12,38 +12,31 @@
 import { BaseService } from './base';
 import type { RequestOptions } from './base';
 import type {
-  KnowledgeEntity,
   ExtractionRequest,
   ExtractionResult,
   EntityListResponse,
   GraphQueryRequest,
   GraphQueryResponse,
 } from '../types/knowledge';
-import { entityCreateSchema, graphQueryRequestSchema, extractionRequestSchema } from '../schemas/knowledge';
+import { graphQueryRequestSchema, extractionRequestSchema } from '../schemas/knowledge';
 import { InputValidationError } from '../errors/validation';
 
-/**
- * Request payload for creating a new knowledge entity.
- *
- * POST /knowledge/entities
- */
-export interface EntityCreate {
-  /** Entity display name */
-  name: string;
-  /** Entity type classification (e.g., Person, Organization, Concept) */
-  entity_type: string;
-  /** Entity description */
-  description?: string;
-  /** Additional entity properties */
-  properties?: Record<string, unknown>;
-}
+// v3.0.0 BREAKING (tenant-contract-reconciliation): `EntityCreate` and
+// `KnowledgeService.createEntity()` were REMOVED. The SDK method POSTed
+// /knowledge/entities — a route the backend has never had (404/405 at
+// runtime, a phantom endpoint; owner decision Q8-A: drop the SDK method
+// rather than add a backend route).
 
 /**
- * Parameters for listing knowledge entities with optional filtering.
+ * Parameters for listing knowledge entities.
+ *
+ * v3.0.0 BREAKING: `user_id` is required — the backend (and OpenAPI) demand
+ * it (`Query(..., min_length=1)`); the previous optional typing let calls
+ * compile that 422'd at runtime.
  */
 export interface EntityListParams {
-  /** Filter entities by user ID (owner) */
-  user_id?: string;
+  /** Entity owner user ID (required by the backend) */
+  user_id: string;
   /** Filter by entity type classification */
   entity_type?: string;
   /** Maximum number of results to return */
@@ -55,9 +48,11 @@ export interface EntityListParams {
 /**
  * Service for managing the knowledge graph via Fast GraphRAG.
  *
- * Provides entity CRUD, BFS graph traversal queries, and automatic
+ * Provides entity listing, BFS graph traversal queries, and automatic
  * entity/relationship extraction from unstructured text. Supports
  * both public (agent-owned) and private (user-owned) knowledge.
+ * (v3.0.0: entity creation was removed — the backend has no
+ * POST /knowledge/entities route; entities are created via extract().)
  *
  * @example
  * ```typescript
@@ -80,27 +75,13 @@ export interface EntityListParams {
  */
 export class KnowledgeService extends BaseService {
   /**
-   * Create a new knowledge entity in the graph.
+   * List knowledge entities for a user with optional filtering.
    *
-   * @param data - Entity creation payload including name, type, and optional description/properties.
-   * @returns The newly created entity with generated entity_id.
-   */
-  async createEntity(data: EntityCreate, options?: RequestOptions): Promise<KnowledgeEntity> {
-    const parsed = entityCreateSchema.safeParse(data);
-    if (!parsed.success) {
-      throw new InputValidationError(parsed.error);
-    }
-    return this.http.post<KnowledgeEntity>('/knowledge/entities', data, options?.signal);
-  }
-
-  /**
-   * List knowledge entities with optional filtering.
-   *
-   * @param params - Optional filters for user_id, entity_type, and pagination controls.
+   * @param params - Filters: required user_id (backend-enforced), optional entity_type and pagination controls.
    * @returns Paginated list of knowledge entities.
    */
-  async listEntities(params?: EntityListParams, options?: RequestOptions): Promise<EntityListResponse> {
-    return this.http.get<EntityListResponse>('/knowledge/entities', params as Record<string, unknown>, options?.signal);
+  async listEntities(params: EntityListParams, options?: RequestOptions): Promise<EntityListResponse> {
+    return this.http.get<EntityListResponse>('/knowledge/entities', params as unknown as Record<string, unknown>, options?.signal);
   }
 
   /**

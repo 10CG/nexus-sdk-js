@@ -11,7 +11,7 @@
 
 import { BaseService } from './base';
 import type { RequestOptions } from './base';
-import type { Tenant, TenantUsage, ApiKey, ApiKeyCreate, ApiKeyCreated } from '../types/tenant';
+import type { Tenant, UsageStats, ApiKey, ApiKeyCreate, ApiKeyCreated } from '../types/tenant';
 
 /**
  * Service for managing the current tenant's profile and usage.
@@ -28,9 +28,9 @@ import type { Tenant, TenantUsage, ApiKey, ApiKeyCreate, ApiKeyCreated } from '.
  * const tenant = await nexus.tenants.me();
  * console.log(`Tenant: ${tenant.name} (${tenant.tier})`);
  *
- * // Check resource usage
- * const usage = await nexus.tenants.usage();
- * console.log(`Memories: ${usage.memories_count}`);
+ * // Check usage statistics for the last week
+ * const usage = await nexus.tenants.usage('week');
+ * console.log(`API calls: ${usage.api_calls} (${usage.success_rate}% ok)`);
  * ```
  */
 export class TenantService extends BaseService {
@@ -47,15 +47,25 @@ export class TenantService extends BaseService {
   }
 
   /**
-   * Retrieve the current tenant's resource usage statistics.
+   * Retrieve the current tenant's usage statistics.
    *
-   * Returns counts for memories, conversations, and today's API calls.
-   * Useful for monitoring quota consumption and building dashboards.
+   * Returns API-call counts, success rate, latency percentiles, resource
+   * counts, and storage usage for the requested period — the backend
+   * `UsageStatsResponse` shape (v3.0.0: previously mistyped as a 3-field
+   * `TenantUsage` that never matched the wire).
    *
-   * @returns Current resource usage for the authenticated tenant.
+   * @param period - Statistics window: `'day'` (default) | `'week'` | `'month'`.
+   * @returns Usage statistics for the authenticated tenant.
    */
-  async usage(options?: RequestOptions): Promise<TenantUsage> {
-    return this.http.get<TenantUsage>('/tenants/me/usage', undefined, options?.signal);
+  async usage(
+    period?: 'day' | 'week' | 'month',
+    options?: RequestOptions,
+  ): Promise<UsageStats> {
+    return this.http.get<UsageStats>(
+      '/tenants/me/usage',
+      period ? { period } : undefined,
+      options?.signal,
+    );
   }
 
   /**

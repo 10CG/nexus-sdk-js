@@ -8,7 +8,6 @@ import {
   memorySearchSchema,
   conversationCreateSchema,
   messageCreateSchema,
-  entityCreateSchema,
   graphQueryRequestSchema,
   extractionRequestSchema,
   apiKeyCreateSchema,
@@ -196,25 +195,9 @@ describe('messageCreateSchema', () => {
 });
 
 // ---------------------------------------------------------------------------
-// entityCreateSchema
+// entityCreateSchema — REMOVED in v3.0.0 (phantom POST /knowledge/entities,
+// no backend route; tenant-contract-reconciliation Q8-A)
 // ---------------------------------------------------------------------------
-
-describe('entityCreateSchema', () => {
-  it('should accept valid minimal request', () => {
-    const result = entityCreateSchema.safeParse({ name: 'Alice', entity_type: 'Person' });
-    expect(result.success).toBe(true);
-  });
-
-  it('should reject empty name', () => {
-    const result = entityCreateSchema.safeParse({ name: '', entity_type: 'Person' });
-    expect(result.success).toBe(false);
-  });
-
-  it('should reject empty entity_type', () => {
-    const result = entityCreateSchema.safeParse({ name: 'Alice', entity_type: '' });
-    expect(result.success).toBe(false);
-  });
-});
 
 // ---------------------------------------------------------------------------
 // graphQueryRequestSchema
@@ -327,12 +310,17 @@ describe('apiKeyCreateSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('should accept valid full request', () => {
+  it('should accept valid full request (v3.0.0: expires_in_days wire field)', () => {
     const result = apiKeyCreateSchema.safeParse({
       name: 'Production Key',
       scopes: ['read', 'write'],
-      expires_days: 90,
+      expires_in_days: 90,
     });
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept the backend default wildcard scope "*" (v3.0.0)', () => {
+    const result = apiKeyCreateSchema.safeParse({ name: 'Key', scopes: ['*'] });
     expect(result.success).toBe(true);
   });
 
@@ -341,23 +329,28 @@ describe('apiKeyCreateSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('should reject name exceeding 100 chars', () => {
-    const result = apiKeyCreateSchema.safeParse({ name: 'a'.repeat(101) });
+  it('should accept name up to 255 chars (v3.0.0: backend max_length=255)', () => {
+    const result = apiKeyCreateSchema.safeParse({ name: 'a'.repeat(255) });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject name exceeding 255 chars', () => {
+    const result = apiKeyCreateSchema.safeParse({ name: 'a'.repeat(256) });
     expect(result.success).toBe(false);
   });
 
-  it('should reject invalid scope', () => {
-    const result = apiKeyCreateSchema.safeParse({ name: 'Key', scopes: ['invalid'] });
+  it('should accept free-form scopes (v3.0.0: backend does not constrain to an enum)', () => {
+    const result = apiKeyCreateSchema.safeParse({ name: 'Key', scopes: ['custom-scope'] });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject expires_in_days < 1', () => {
+    const result = apiKeyCreateSchema.safeParse({ name: 'Key', expires_in_days: 0 });
     expect(result.success).toBe(false);
   });
 
-  it('should reject expires_days < 1', () => {
-    const result = apiKeyCreateSchema.safeParse({ name: 'Key', expires_days: 0 });
-    expect(result.success).toBe(false);
-  });
-
-  it('should reject expires_days > 365', () => {
-    const result = apiKeyCreateSchema.safeParse({ name: 'Key', expires_days: 366 });
+  it('should reject expires_in_days > 365', () => {
+    const result = apiKeyCreateSchema.safeParse({ name: 'Key', expires_in_days: 366 });
     expect(result.success).toBe(false);
   });
 });

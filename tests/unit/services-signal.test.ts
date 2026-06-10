@@ -201,20 +201,8 @@ describe('AbortSignal passthrough to Service methods', () => {
   // ---- Knowledge Service --------------------------------------------------
 
   describe('KnowledgeService', () => {
-    it('createEntity() passes signal to http.post', async () => {
-      mockAxiosInstance.post.mockResolvedValueOnce(axiosResponse({ entity_id: 'e1' }));
-
-      await client.knowledge.createEntity(
-        { name: 'Alice', entity_type: 'Person' },
-        { signal: controller.signal },
-      );
-
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
-        '/knowledge/entities',
-        expect.anything(),
-        expect.objectContaining({ signal: controller.signal }),
-      );
-    });
+    // createEntity() removed in v3.0.0 (phantom POST /knowledge/entities — no
+    // backend route; tenant-contract-reconciliation Q8-A).
 
     it('query() passes signal to http.post', async () => {
       mockAxiosInstance.post.mockResolvedValueOnce(axiosResponse({ paths: [] }));
@@ -281,14 +269,25 @@ describe('AbortSignal passthrough to Service methods', () => {
       );
     });
 
-    it('usage() passes signal to http.get', async () => {
-      mockAxiosInstance.get.mockResolvedValueOnce(axiosResponse({ api_calls_today: 0 }));
+    it('usage() passes signal to http.get (v3.0.0: period is the first arg)', async () => {
+      mockAxiosInstance.get.mockResolvedValueOnce(axiosResponse({ api_calls: 0 }));
 
-      await client.tenants.usage({ signal: controller.signal });
+      await client.tenants.usage(undefined, { signal: controller.signal });
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/tenants/me/usage',
         expect.objectContaining({ signal: controller.signal }),
+      );
+    });
+
+    it('usage(period) forwards the period as a query param', async () => {
+      mockAxiosInstance.get.mockResolvedValueOnce(axiosResponse({ api_calls: 0 }));
+
+      await client.tenants.usage('week');
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/tenants/me/usage',
+        expect.objectContaining({ params: { period: 'week' } }),
       );
     });
   });

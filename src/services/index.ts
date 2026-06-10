@@ -22,7 +22,7 @@ export type { MemoryListParams, MemoryJournalParams } from './memories';
 export { ConversationService } from './conversations';
 export type { ConversationListParams, MessageListParams } from './conversations';
 export { KnowledgeService } from './knowledge';
-export type { EntityCreate, EntityListParams } from './knowledge';
+export type { EntityListParams } from './knowledge';
 export { ActivityService } from './activities';
 export { TenantService } from './tenants';
 export { FeedbackService } from './feedback';

@@ -87,17 +87,16 @@ export type {
 } from './activity';
 export type { ActivityType, ActivityProcessingStatus } from './activity';
 
-// Tenant types
+// Tenant types (v3.0.0: TenantUsage + ApiKeyScope removed — see types/tenant.ts)
 export type {
   Tenant,
   TenantQuotas,
-  TenantUsage,
   ApiKey,
   ApiKeyCreate,
   ApiKeyCreated,
   UsageStats,
 } from './tenant';
-export type { TenantTier, ApiKeyScope } from './tenant';
+export type { TenantTier } from './tenant';
 
 // Feedback types
 export type {

@@ -5,6 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-06-10
+
+### Changed — BREAKING (tenant-contract-reconciliation)
+
+Canonical = backend Pydantic `response_model` (`schemas/tenant.py`), same
+doctrine as 2.0.0. The tenant domain types were structurally drifted; this
+realigns them and removes two knowledge-domain phantoms. See nexus
+`openspec/changes/tenant-contract-reconciliation/proposal.md`.
+
+**`Tenant`** (`GET /tenants/me`) — flat shape:
+
+| 2.x (removed) | 3.0.0 (canonical) |
+|---|---|
+| `usage?: TenantUsage` (nested, **phantom** — never on the wire) | flat `memories_count` / `conversations_count` / `graph_nodes_count` |
+| — (missing) | `quota_remaining: Record<string, number>` |
+| `quotas?: TenantQuotas` (optional) | `quotas: TenantQuotas` (required; + index signature) |
+
+**`UsageStats`** (`GET /tenants/me/usage`) — full 13-field realignment:
+adds `tenant_id`, `success_rate`, `avg_latency_ms`, `p50/p95/p99_latency_ms`,
+`memories_count`, `conversations_count`, `graph_nodes_count`,
+`storage_used_bytes`, `storage_limit_bytes`; **removes phantom**
+`tokens_used` / `memories_created` / `conversations_created`.
+`TenantService.usage()` now returns `UsageStats` (was the 3-field phantom
+`TenantUsage`) and takes `period?: 'day' | 'week' | 'month'` as its first
+argument (options moved to the second).
+
+**`ApiKeyCreate`** — request field `expires_days` → **`expires_in_days`**
+(the real wire name; the old name was silently dropped by the backend, so
+keys created through the SDK never expired). `name` max length 100 → 255.
+
+**`scopes`** — `ApiKeyScope` enum (`read|write|admin`) **removed**; scopes
+are `string[]` documenting backend reality (known values: `read`, `write`,
+`admin`, and the `"*"` wildcard — the backend's actual default, which the
+enum could not represent).
+
+### Removed — BREAKING
+
+- **`TenantUsage`** type (phantom nested usage shape).
+- **`ApiKeyScope`** type (see scopes above).
+- **`KnowledgeService.createEntity()` + `EntityCreate` + `entityCreateSchema`**
+  — phantom endpoint: the SDK POSTed `/knowledge/entities`, a route the
+  backend has never had (404/405 at runtime). Owner decision Q8-A: drop the
+  SDK method. Entities are created via `knowledge.extract()`.
+
+### Fixed
+
+- **`EntityListParams.user_id`** is now required — the backend demands it
+  (`Query(..., min_length=1)`); the old optional typing let calls compile
+  that 422'd at runtime. `listEntities(params)` first argument is now
+  required accordingly.
+
 ## [2.0.0] - 2026-06-05
 
 ### Changed — BREAKING (contract reconciliation, ADR-003)

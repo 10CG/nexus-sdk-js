@@ -56,7 +56,7 @@ export { ErrorService } from './services/errors';
 // Service parameter types (defined in service files)
 export type { MemoryListParams, MemoryJournalParams } from './services/memories';
 export type { ConversationListParams, MessageListParams } from './services/conversations';
-export type { EntityCreate, EntityListParams } from './services/knowledge';
+export type { EntityListParams } from './services/knowledge';
 export type { FeedbackListParams } from './services/feedback';
 export type { RequestOptions } from './services/base';
 
@@ -168,16 +168,16 @@ export type {
 } from './types';
 
 // Tenant types
+// v3.0.0: TenantUsage (phantom nested usage shape) and ApiKeyScope (enum
+// unable to represent the backend's "*" wildcard) were removed.
 export type {
   Tenant,
   TenantQuotas,
-  TenantUsage,
   ApiKey,
   ApiKeyCreate,
   ApiKeyCreated,
   UsageStats,
   TenantTier,
-  ApiKeyScope,
 } from './types';
 
 // Feedback types
@@ -213,7 +213,6 @@ export {
   memorySearchSchema,
   conversationCreateSchema,
   messageCreateSchema,
-  entityCreateSchema,
   graphQueryRequestSchema,
   extractionRequestSchema,
   apiKeyCreateSchema,
