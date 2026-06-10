@@ -32,6 +32,8 @@ export interface TenantQuotas {
   max_memories?: number;
   /** Maximum number of conversations allowed */
   max_conversations?: number;
+  /** Maximum number of knowledge graph nodes allowed */
+  max_graph_nodes?: number;
   /** Maximum API calls per day */
   max_api_calls_per_day?: number;
   /** Forward-compatible: any additional quota dimensions */
