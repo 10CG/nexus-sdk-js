@@ -179,6 +179,40 @@ describe('Integration: NexusClient → Services → HttpClient', () => {
   // ---- Conversation Service -----------------------------------------------
 
   describe('ConversationService', () => {
+    it('list() returns the backend FLAT container (v4.0.0 wire shape lock)', async () => {
+      // `satisfies` + tests/ type-check make this a compile-time lock on the
+      // v4.0.0 flat ConversationList (the old {data, pagination} nesting was
+      // a phantom that never matched the wire).
+      const listResponse = {
+        conversations: [
+          {
+            id: 'c1',
+            conversation_id: 'tenant-a::u1::s1',
+            tenant_id: 'tenant-a',
+            user_id: 'u1',
+            agent_id: null,
+            status: 'active',
+            summary: null,
+            message_count: 2,
+            created_at: '2026-06-11T00:00:00Z',
+            updated_at: '2026-06-11T00:00:00Z',
+          },
+        ],
+        total_count: 1,
+        limit: 20,
+        offset: 0,
+        has_next: false,
+      } satisfies import('../../src/types/conversation').ConversationList;
+      mockAxiosInstance.get.mockResolvedValueOnce(axiosResponse(listResponse));
+
+      const result = await client.conversations.list({ user_id: 'u1' });
+
+      expect(result.conversations).toHaveLength(1);
+      expect(result.conversations[0].conversation_id).toBe('tenant-a::u1::s1');
+      expect(result.total_count).toBe(1);
+      expect(result.has_next).toBe(false);
+    });
+
     it('create() calls POST /conversations', async () => {
       const conv = { id: 'c1', user_id: 'u1' };
       mockAxiosInstance.post.mockResolvedValueOnce(axiosResponse(conv));

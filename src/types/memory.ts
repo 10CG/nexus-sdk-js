@@ -17,13 +17,26 @@ export type MemoryType = 'episodic' | 'semantic' | 'procedural';
 
 /**
  * A memory record stored in the Nexus platform.
- * Represents a single piece of user knowledge managed by Mem0.
+ *
+ * Mirrors backend `MemoryResponse` (schemas/memory.py, 14 fields).
+ *
+ * v4.0.0 (memory-conversation-contract-reconciliation): adds the
+ * compound-identifier trio (`memory_id` / `tenant_id` / `agent_id`) and the
+ * US-035 temporal-validity window (`valid_from` / `valid_until` /
+ * `valid_until_source`) — all emitted by the backend but previously missing
+ * from this type (readers got `undefined`).
  */
 export interface Memory {
+  /** Compound memory ID ("tenant::user::uuid") — needed for multi-tenant ops */
+  memory_id: string;
   /** Unique memory identifier (UUID) */
   id: string;
+  /** Tenant identifier */
+  tenant_id: string;
   /** User ID that owns this memory */
   user_id: string;
+  /** Originating agent (null when not agent-written) */
+  agent_id?: string | null;
   /** Memory content text */
   content: string;
   /** Classification of the memory */
@@ -31,7 +44,13 @@ export interface Memory {
   /** Additional metadata key-value pairs */
   metadata?: Record<string, unknown>;
   /** Relevance score (present in search results) */
-  score?: number;
+  score?: number | null;
+  /** Start of the temporal validity window (inclusive; server-managed) */
+  valid_from?: string | null;
+  /** End of the temporal validity window (exclusive; null = permanent) */
+  valid_until?: string | null;
+  /** Provenance of valid_until (permanent / extracted / sdk_provided / ...) */
+  valid_until_source?: string | null;
   /** Timestamp when the memory was created (ISO 8601) */
   created_at: string;
   /** Timestamp when the memory was last updated (ISO 8601) */

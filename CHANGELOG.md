@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2026-06-11
+
+### Changed — BREAKING (memory-conversation-contract-reconciliation)
+
+Canonical = backend Pydantic `response_model` wire names, same doctrine as
+2.0.0/3.0.0. This realigns the conversation domain (structurally drifted) and
+completes the `Memory` field set. See nexus
+`openspec/changes/memory-conversation-contract-reconciliation/proposal.md`.
+
+**`Conversation`** (`GET /conversations/{id}`):
+
+| 3.x (removed) | 4.0.0 (canonical) |
+|---|---|
+| `session_id?` (**phantom** — never on the wire) | `conversation_id` (the real wire key; backend `compound_session_id` serializes via alias) |
+| — (missing) | `tenant_id`, `agent_id`, `status` |
+
+**`ConversationList` / `MessageList`** — FLAT containers (backend
+`ConversationListResponse` / `MessageListResponse`):
+`{conversations|messages, total_count, limit, offset, has_next}`. The old
+nested `{data, pagination:{...}}` / `{data, has_more}` shapes never existed
+on the wire.
+
+**`Message`** — full 11-field realignment: adds `message_id`,
+`conversation_id` (UUID), `conversation_compound_id`, `tenant_id`, `user_id`;
+`sequence` is now required (always emitted).
+
+**`ConversationSummary`** — realigned to backend `SummaryResponse`: adds
+`summary_message_count` / `message_count` / `created_at`; **removes phantom**
+`key_points[]` / `generated_at`. The wire id key is `conversation_id`
+(unified backend-side 2026-06-11 — previously this endpoint emitted
+`compound_session_id`, an internal third id variant).
+
+**`Memory`** — adds the compound-identifier trio (`memory_id` / `tenant_id` /
+`agent_id`) and the US-035 temporal-validity window (`valid_from` /
+`valid_until` / `valid_until_source`) — all emitted by the backend but
+previously invisible to SDK readers.
+
+### Removed — BREAKING
+
+- **`ConversationDetail`** type — phantom shape: the backend
+  `GET /conversations/{id}` response has no `messages` array (and the
+  `include_messages` query param never existed). `conversations.get()` now
+  returns `Conversation`; fetch messages via `conversations.getMessages()`.
+
 ## [3.0.0] - 2026-06-10
 
 ### Changed — BREAKING (tenant-contract-reconciliation)
