@@ -1,10 +1,17 @@
 /**
  * @nexusm/sdk - Conversation Types
  *
- * Type definitions for the Conversation Service powered by Zep OSS.
+ * Type definitions for the Conversation Service.
  * Manages conversation history, messages, and auto-generated summaries.
  *
- * Based on Nexus API v2.0 OpenAPI specification.
+ * v4.0.0 BREAKING (memory-conversation-contract-reconciliation, 2026-06-11):
+ * canonical = backend Pydantic response models (`schemas/conversation.py`)
+ * serialized wire names. The previous shapes were drifted: nested
+ * `{data, pagination}` containers never existed on the wire (backend lists
+ * are FLAT), the conversation identifier wire key is `conversation_id` (the
+ * old `session_id` was a phantom), `ConversationDetail` described a response
+ * no endpoint emits, and `ConversationSummary` declared phantom
+ * `key_points`/`generated_at` while missing the real count fields.
  */
 
 // ============== Message Role ==============
@@ -19,17 +26,29 @@ export type ConversationStatus = 'active' | 'archived' | 'deleted';
 
 /**
  * A conversation session between a user and an AI agent.
- * Managed by Zep OSS for temporal graph and auto-summary.
+ *
+ * GET /conversations/{conversation_id} — mirrors backend
+ * `ConversationResponse` (11 fields, flat).
+ *
+ * v4.0.0 BREAKING: `session_id` → `conversation_id` (the real wire key —
+ * backend field `compound_session_id` serializes via alias); adds
+ * `tenant_id` / `agent_id` / `status` (previously missing).
  */
 export interface Conversation {
   /** Unique conversation identifier (UUID) */
   id: string;
+  /** Compound session ID ("tenant::user::session") — the wire key */
+  conversation_id: string;
+  /** Tenant identifier */
+  tenant_id: string;
   /** User ID that owns this conversation */
   user_id: string;
-  /** Session identifier for the conversation */
-  session_id?: string;
+  /** Originating agent (null when not agent-created) */
+  agent_id?: string | null;
+  /** Conversation status (e.g. active / archived) */
+  status: string;
   /** Auto-generated conversation summary */
-  summary?: string;
+  summary?: string | null;
   /** Total number of messages in the conversation */
   message_count: number;
   /** Additional metadata key-value pairs */
@@ -54,23 +73,36 @@ export interface ConversationCreate {
   metadata?: Record<string, unknown>;
 }
 
-/**
- * Conversation with its messages included.
- * Returned when include_messages=true.
- */
-export interface ConversationDetail extends Conversation {
-  /** Messages in the conversation */
-  messages: Message[];
-}
+// v4.0.0 BREAKING: `ConversationDetail` was REMOVED — the backend
+// GET /conversations/{id} response_model is ConversationResponse; no endpoint
+// emits a conversation-with-messages shape (it was a phantom, together with
+// the phantom `include_messages` query param). Fetch messages via
+// `conversations.getMessages()`.
 
 // ============== Message ==============
 
 /**
  * A single message within a conversation.
+ *
+ * Mirrors backend `MessageResponse` (11 fields).
+ *
+ * v4.0.0 BREAKING: adds `message_id` / `conversation_id` /
+ * `conversation_compound_id` / `tenant_id` / `user_id` correlation fields
+ * (previously missing from the SDK type while present on the wire).
  */
 export interface Message {
   /** Unique message identifier (UUID) */
   id: string;
+  /** Compound message ID */
+  message_id: string;
+  /** Owning conversation UUID (NOT the compound id — see conversation_compound_id) */
+  conversation_id: string;
+  /** Owning conversation compound ID ("tenant::user::session") */
+  conversation_compound_id: string;
+  /** Tenant identifier */
+  tenant_id: string;
+  /** User identifier */
+  user_id: string;
   /** Message role (user, assistant, system, or tool) */
   role: MessageRole;
   /** Message content text */
@@ -78,7 +110,7 @@ export interface Message {
   /** Additional metadata key-value pairs */
   metadata?: Record<string, unknown>;
   /** Message sequence number within the conversation */
-  sequence?: number;
+  sequence: number;
   /** Timestamp when the message was created (ISO 8601) */
   created_at: string;
 }
@@ -102,51 +134,69 @@ export interface MessageCreate {
 /**
  * Paginated list of conversations.
  *
- * GET /conversations?user_id=...
+ * GET /conversations?user_id=... — mirrors backend
+ * `ConversationListResponse` (FLAT container).
+ *
+ * v4.0.0 BREAKING: was nested `{data, pagination:{total, limit, offset,
+ * has_more}}` — that shape never existed on the wire.
  */
 export interface ConversationList {
   /** Array of conversation records */
-  data: Conversation[];
-  /** Pagination metadata */
-  pagination: {
-    /** Total number of conversations */
-    total: number;
-    /** Current page size limit */
-    limit: number;
-    /** Current offset */
-    offset: number;
-    /** Whether more results exist */
-    has_more: boolean;
-  };
+  conversations: Conversation[];
+  /** Total number of conversations */
+  total_count: number;
+  /** Current page size limit */
+  limit: number;
+  /** Current offset */
+  offset: number;
+  /** Whether more results exist */
+  has_next: boolean;
 }
 
 /**
  * Paginated list of messages within a conversation.
  *
- * GET /conversations/:conversation_id/messages
+ * GET /conversations/:conversation_id/messages — mirrors backend
+ * `MessageListResponse` (FLAT container).
+ *
+ * v4.0.0 BREAKING: was `{data, has_more}` — missing
+ * total_count/limit/offset and using a phantom container key.
  */
 export interface MessageList {
   /** Array of message records */
-  data: Message[];
-  /** Whether more messages exist before the current page */
-  has_more: boolean;
+  messages: Message[];
+  /** Total number of messages */
+  total_count: number;
+  /** Current page size limit */
+  limit: number;
+  /** Current offset */
+  offset: number;
+  /** Whether more messages exist */
+  has_next: boolean;
 }
 
 // ============== Conversation Summary ==============
 
 /**
  * Auto-generated summary of a conversation.
- * Generated by Zep OSS temporal graph analysis.
  *
- * GET /conversations/:conversation_id/summary
+ * GET /conversations/:conversation_id/summary — mirrors backend
+ * `SummaryResponse` (5 fields).
+ *
+ * v4.0.0 BREAKING: the previous shape declared phantom `key_points[]` /
+ * `generated_at`; the backend emits message counts + `created_at`. The wire
+ * id key is `conversation_id` (unified 2026-06-11 — the endpoint previously
+ * emitted `compound_session_id`, an internal third id variant).
  */
 export interface ConversationSummary {
-  /** Conversation identifier (UUID) */
+  /** Compound conversation ID (same key as Conversation.conversation_id) */
   conversation_id: string;
-  /** Generated summary text */
-  summary?: string;
-  /** Key points extracted from the conversation */
-  key_points?: string[];
-  /** Timestamp when the summary was generated (ISO 8601) */
-  generated_at: string;
+  /** Generated summary text (null until first summary) */
+  summary?: string | null;
+  /** Number of messages already folded into the summary */
+  summary_message_count: number;
+  /** Total number of messages in the conversation */
+  message_count: number;
+  /** Timestamp when the conversation was created (ISO 8601) */
+  created_at: string;
 }

@@ -14,7 +14,6 @@ import type { RequestOptions } from './base';
 import type {
   Conversation,
   ConversationCreate,
-  ConversationDetail,
   ConversationList,
   Message,
   MessageCreate,
@@ -99,14 +98,18 @@ export class ConversationService extends BaseService {
   }
 
   /**
-   * Retrieve a conversation with its messages included.
+   * Retrieve a conversation.
    *
-   * @param conversationId - UUID of the conversation to retrieve.
-   * @returns Conversation detail including the full message list.
+   * v4.0.0 BREAKING: returns `Conversation` — the backend response has no
+   * `messages` array (the previous `ConversationDetail` shape was a
+   * phantom). Fetch messages via {@link getMessages}.
+   *
+   * @param conversationId - Compound conversation ID to retrieve.
+   * @returns The conversation record.
    * @throws {ApiError} 404 if the conversation does not exist.
    */
-  async get(conversationId: string, options?: RequestOptions): Promise<ConversationDetail> {
-    return this.http.get<ConversationDetail>(`/conversations/${conversationId}`, undefined, options?.signal);
+  async get(conversationId: string, options?: RequestOptions): Promise<Conversation> {
+    return this.http.get<Conversation>(`/conversations/${conversationId}`, undefined, options?.signal);
   }
 
   /**

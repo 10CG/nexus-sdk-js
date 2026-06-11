@@ -50,11 +50,10 @@ export type {
 } from './memory';
 export type { MemoryType } from './memory';
 
-// Conversation types
+// Conversation types (v4.0.0: ConversationDetail removed — phantom shape)
 export type {
   Conversation,
   ConversationCreate,
-  ConversationDetail,
   ConversationList,
   Message,
   MessageCreate,
