@@ -1,0 +1,73 @@
+# nexus-sdk-js — CI (sdk #22)
+#
+# Scope: lint + type-check (src + tests) + build + unit/integration tests.
+#
+# WHY THIS EXISTS (2026-06-11, tenant-contract-reconciliation audit tech-lead
+# recommendation): this repo previously had NO PR gate — SDK 3.0.0 (PR #20)
+# and its amendments (#21) merged on local verification only. The SDK is the
+# org's widest-consumed package (console / mcp-server / Kairos-vendored), and
+# future majors (v7.x codegen) raise the stakes: a PR with red tsc/tests could
+# previously merge and surface only at tag-publish or in the nexus parity
+# manifest regen.
+#
+# Type-check note: `npm run type-check` runs tsconfig.typecheck.json
+# (noEmit, include src + tests). The base tsconfig excludes tests/, and
+# vitest (esbuild) strips types without checking them — so test fixtures
+# annotated against SDK types (e.g. the `satisfies UsageStats` mock in
+# tests/integration/services.test.ts) are only live compile-time locks
+# because this config covers tests/. Same pattern as nexusm-mcp-server #25.
+# (Verified by injection: a wrong-typed fixture field fails this step.)
+#
+# Known out-of-scope debt: `eslint tests/` has 1 error + 29 warnings
+# (pre-existing); the lint step keeps the existing `eslint src/` scope.
+#
+# Forgejo Actions notes:
+#   - npm publish is NOT done here (cross-border; it runs on the GitHub
+#     mirror via tag-push publish.yml — see RUNBOOK §0.A). This workflow is
+#     intranet-only and does not violate the "CI 热路径不跨境" design.
+#   - NPM_TOKEN step is a no-op when the secret is absent (public deps).
+#   - No `paths:` filter: small repo, every change should be gated.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-typecheck-build-test:
+    name: Lint + type-check + build + tests
+    runs-on: ubuntu-latest
+    container:
+      image: node:20-bookworm
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure npm registry auth
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -n "$NPM_TOKEN" ]; then
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+          else
+            echo "::warning::NPM_TOKEN secret not set — install will be unauthenticated (fine for public deps)"
+          fi
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check (src + tests)
+        run: npm run type-check
+
+      - name: Build
+        run: npm run build
+
+      - name: Tests
+        run: npm test
