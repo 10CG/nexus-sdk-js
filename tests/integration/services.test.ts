@@ -28,6 +28,8 @@ vi.mock('axios', () => ({
 }));
 
 import { NexusClient } from '../../src/client';
+import type { ContextRequest } from '../../src/types/context';
+import type { UsageStats } from '../../src/types/tenant';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -70,10 +72,13 @@ describe('Integration: NexusClient → Services → HttpClient', () => {
       };
       mockAxiosInstance.post.mockResolvedValueOnce(axiosResponse(mockResponse));
 
-      const request = {
+      // `as const` made `layers` a readonly tuple, incompatible with the
+      // mutable `ContextLayer[]` in ContextRequest (surfaced by enabling
+      // tests/ type-check, sdk #22); type the literal instead.
+      const request: ContextRequest = {
         user_id: 'user_42',
         query: 'user preferences',
-        layers: ['semantic', 'graph'] as const,
+        layers: ['semantic', 'graph'],
       };
 
       const result = await client.context.retrieve(request);
@@ -308,8 +313,9 @@ describe('Integration: NexusClient → Services → HttpClient', () => {
     });
 
     it('usage() calls GET /tenants/me/usage', async () => {
-      // Full 13-field UsageStatsResponse wire shape (audit R1 amendment: the
-      // previous 2-field mock carried the deleted phantom `api_calls_today`).
+      // Full 13-field UsageStatsResponse wire shape (audit R1 amendment).
+      // `satisfies` + tests/ type-check (sdk #22) make this a compile-time
+      // lock: a UsageStats shape change now fails `npm run type-check`.
       const usage = {
         tenant_id: '11111111-2222-3333-4444-555555555555',
         period: 'day',
@@ -324,7 +330,7 @@ describe('Integration: NexusClient → Services → HttpClient', () => {
         graph_nodes_count: 5,
         storage_used_bytes: 1024,
         storage_limit_bytes: 0,
-      };
+      } satisfies UsageStats;
       mockAxiosInstance.get.mockResolvedValueOnce(axiosResponse(usage));
 
       const result = await client.tenants.usage();
