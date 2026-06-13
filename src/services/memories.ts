@@ -28,8 +28,13 @@ import { InputValidationError } from '../errors/validation';
  * Parameters for listing memories with optional filtering and pagination.
  */
 export interface MemoryListParams {
-  /** Filter memories by user ID */
-  user_id?: string;
+  /**
+   * User ID within the tenant whose memories to list.
+   *
+   * v5.0.0 BREAKING: now required — backend `GET /memories` declares
+   * `user_id` as `Query(..., min_length=1)`; omitting it returns 422.
+   */
+  user_id: string;
   /** Filter by memory type classification */
   memory_type?: MemoryType;
   /** Maximum number of results per page */
@@ -53,8 +58,9 @@ export interface MemoryJournalParams {
 }
 
 /**
- * Service for managing long-term memories via Mem0.
+ * Service for managing long-term memories.
  *
+ * Backed by the Nexus Memory Service (Native pgvector + ProfileWorker).
  * Provides full CRUD operations, semantic search, and the chronological
  * Memory Journal view for reviewing memories over time.
  *
@@ -98,7 +104,7 @@ export class MemoryService extends BaseService {
    * @returns Paginated list of memory records.
    */
   async list(params?: MemoryListParams, options?: RequestOptions): Promise<MemoryList> {
-    return this.http.get<MemoryList>('/memories', params as Record<string, unknown>, options?.signal);
+    return this.http.get<MemoryList>('/memories', params as unknown as Record<string, unknown>, options?.signal);
   }
 
   /**

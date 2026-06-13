@@ -151,10 +151,10 @@ describe('conversationCreateSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('should accept valid full request', () => {
+  it('should accept valid full request (agent_id, not phantom session_id)', () => {
     const result = conversationCreateSchema.safeParse({
       user_id: 'u1',
-      session_id: 'sess1',
+      agent_id: 'agent_7',
       metadata: { topic: 'test' },
     });
     expect(result.success).toBe(true);
@@ -163,6 +163,19 @@ describe('conversationCreateSchema', () => {
   it('should reject empty user_id', () => {
     const result = conversationCreateSchema.safeParse({ user_id: '' });
     expect(result.success).toBe(false);
+  });
+
+  it('should strip phantom session_id (v5.0.0: backend silently drops it)', () => {
+    // session_id is no longer in the schema; zod strips unknown keys by
+    // default, so parsing succeeds but the field does not survive.
+    const result = conversationCreateSchema.safeParse({
+      user_id: 'u1',
+      session_id: 'sess1',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect('session_id' in result.data).toBe(false);
+    }
   });
 });
 

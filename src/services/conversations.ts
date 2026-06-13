@@ -2,11 +2,13 @@
  * @module services/conversations
  * @description Conversation Service - Conversation history and auto-summary management.
  *
- * Wraps the Nexus Conversation API powered by Zep OSS. Supports
- * conversation lifecycle management, message operations, and
- * auto-generated summaries via temporal graph analysis.
+ * Wraps the Nexus Conversation API (Native implementation: incremental
+ * summaries produced by the backend SummaryWorker, NOT Zep OSS). Supports
+ * conversation lifecycle management, message operations, and access to
+ * auto-generated summaries.
  *
- * Based on Nexus API v2.0 - /conversations endpoints
+ * v5.0.0: corrected stale "Zep OSS"/"temporal graph"/"API v2.0" docs — the
+ * backend has always used a Native SummaryWorker.
  */
 
 import { BaseService } from './base';
@@ -27,8 +29,13 @@ import { InputValidationError } from '../errors/validation';
  * Parameters for listing conversations with optional filtering and pagination.
  */
 export interface ConversationListParams {
-  /** Filter conversations by user ID */
-  user_id?: string;
+  /**
+   * User ID within the tenant whose conversations to list.
+   *
+   * v5.0.0 BREAKING: now required — backend `GET /conversations` declares
+   * `user_id` as `Query(..., min_length=1)`; omitting it returns 422.
+   */
+  user_id: string;
   /** Maximum number of results per page */
   limit?: number;
   /** Offset for pagination */
@@ -46,11 +53,11 @@ export interface MessageListParams {
 }
 
 /**
- * Service for managing conversations and messages via Zep OSS.
+ * Service for managing conversations and messages.
  *
  * Provides conversation lifecycle management (create, list, get, delete),
  * message operations (add, list), and access to auto-generated summaries
- * produced by Zep's temporal graph analysis.
+ * produced by the backend SummaryWorker (Native, incremental).
  *
  * @example
  * ```typescript
@@ -94,7 +101,7 @@ export class ConversationService extends BaseService {
    * @returns Paginated list of conversation records.
    */
   async list(params?: ConversationListParams, options?: RequestOptions): Promise<ConversationList> {
-    return this.http.get<ConversationList>('/conversations', params as Record<string, unknown>, options?.signal);
+    return this.http.get<ConversationList>('/conversations', params as unknown as Record<string, unknown>, options?.signal);
   }
 
   /**
@@ -115,11 +122,11 @@ export class ConversationService extends BaseService {
   /**
    * Add a message to an existing conversation.
    *
-   * The message is appended to the conversation's message sequence.
-   * Zep will asynchronously update the conversation summary after
-   * new messages are added.
+   * The message is appended to the conversation's message sequence. The
+   * backend SummaryWorker asynchronously updates the conversation summary
+   * after new messages are added.
    *
-   * @param conversationId - UUID of the target conversation.
+   * @param conversationId - Compound conversation ID ("tenant::user::session").
    * @param message - Message payload including role and content.
    * @returns The newly created message with generated ID and sequence number.
    * @throws {ApiError} 404 if the conversation does not exist.
@@ -137,7 +144,7 @@ export class ConversationService extends BaseService {
    *
    * Messages are returned in chronological order (oldest first).
    *
-   * @param conversationId - UUID of the conversation.
+   * @param conversationId - Compound conversation ID ("tenant::user::session").
    * @param params - Optional pagination controls (limit, offset).
    * @returns Paginated list of messages.
    * @throws {ApiError} 404 if the conversation does not exist.
@@ -153,11 +160,13 @@ export class ConversationService extends BaseService {
   /**
    * Retrieve the auto-generated summary of a conversation.
    *
-   * Summaries are produced by Zep OSS temporal graph analysis and
-   * include key points extracted from the conversation history.
+   * Summaries are produced incrementally by the backend SummaryWorker from
+   * the conversation history.
    *
-   * @param conversationId - UUID of the conversation.
-   * @returns The conversation summary with key points and generation timestamp.
+   * @param conversationId - Compound conversation ID ("tenant::user::session").
+   * @returns The conversation summary ({@link ConversationSummary}: summary
+   *   text + message counts + created_at). Note: no "key points" or
+   *   "generated_at" fields — those were phantom (removed in v4.0.0).
    * @throws {ApiError} 404 if the conversation does not exist.
    */
   async getSummary(conversationId: string, options?: RequestOptions): Promise<ConversationSummary> {
@@ -165,12 +174,13 @@ export class ConversationService extends BaseService {
   }
 
   /**
-   * Delete a conversation and all its messages.
+   * Delete a conversation.
    *
-   * This operation is irreversible. The conversation, all associated
-   * messages, and the generated summary will be permanently removed.
+   * Soft-delete: the backend sets `deleted_at` (the conversation stops
+   * appearing in list/get) rather than physically removing the row and its
+   * messages.
    *
-   * @param conversationId - UUID of the conversation to delete.
+   * @param conversationId - Compound conversation ID ("tenant::user::session").
    * @throws {ApiError} 404 if the conversation does not exist.
    */
   async delete(conversationId: string, options?: RequestOptions): Promise<void> {

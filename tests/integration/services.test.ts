@@ -114,7 +114,8 @@ describe('Integration: NexusClient → Services → HttpClient', () => {
     });
 
     it('list() calls GET /memories with params', async () => {
-      const list = { data: [], total: 0 };
+      // v5.0.0: flat MemoryList container (was nested {data, pagination})
+      const list = { memories: [], total_count: 0, limit: 10, offset: 0, has_next: false };
       mockAxiosInstance.get.mockResolvedValueOnce(axiosResponse(list));
 
       const result = await client.memories.list({ user_id: 'u1', limit: 10 });
@@ -194,6 +195,7 @@ describe('Integration: NexusClient → Services → HttpClient', () => {
             status: 'active',
             summary: null,
             message_count: 2,
+            metadata: {},
             created_at: '2026-06-11T00:00:00Z',
             updated_at: '2026-06-11T00:00:00Z',
           },

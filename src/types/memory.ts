@@ -164,22 +164,25 @@ export interface MemorySearchResult {
 /**
  * Paginated list of memories.
  *
- * GET /memories?user_id=...
+ * GET /memories?user_id=... — mirrors backend `MemoryListResponse` (FLAT
+ * container).
+ *
+ * v5.0.0 BREAKING: was nested `{data, pagination:{total, limit, offset,
+ * has_more}}` — that shape never existed on the wire. The backend response
+ * is flat `{memories, total_count, limit, offset, has_next}`; the old nested
+ * shape meant `result.data` was always `undefined` at runtime.
  */
 export interface MemoryList {
   /** Array of memory records */
-  data: Memory[];
-  /** Pagination metadata */
-  pagination: {
-    /** Total number of memories */
-    total: number;
-    /** Current page size limit */
-    limit: number;
-    /** Current offset */
-    offset: number;
-    /** Whether more results exist */
-    has_more: boolean;
-  };
+  memories: Memory[];
+  /** Total number of memories matching the query */
+  total_count: number;
+  /** Current page size limit */
+  limit: number;
+  /** Current offset */
+  offset: number;
+  /** Whether more results exist beyond this page */
+  has_next: boolean;
 }
 
 // ============== Memory Journal (US-015) ==============
