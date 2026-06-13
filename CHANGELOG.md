@@ -5,6 +5,67 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] - 2026-06-13
+
+### Changed — BREAKING (memlist-convreq-contract-reconciliation)
+
+Final type-pass of the cataloged contract drift (closes nexus-sdk-js #25).
+Same doctrine as 2.0.0/3.0.0/4.0.0 — backend Pydantic `response_model` wire
+names are ground truth. The backend was already correct this cycle; the SDK
+and OpenAPI catch up. See nexus
+`openspec/changes/memlist-convreq-contract-reconciliation/proposal.md`.
+
+**`MemoryList`** (`GET /memories`) — FLAT container (backend
+`MemoryListResponse`):
+
+| 4.x (removed) | 5.0.0 (canonical) |
+|---|---|
+| `{ data: Memory[], pagination: { total, limit, offset, has_more } }` | `{ memories, total_count, limit, offset, has_next }` |
+
+The old nested shape never existed on the wire — `result.data` was always
+`undefined` at runtime. (Same flat-vs-nested fix already applied to
+`ConversationList`/`MessageList` in 4.0.0; `MemoryList` was missed.)
+
+**`ConversationCreate`** (`POST /conversations` request) — mirrors backend
+`CreateConversationRequest`:
+
+| 4.x (removed) | 5.0.0 (canonical) |
+|---|---|
+| `session_id?` (**phantom** — backend `extra=ignore` silently drops it; session id is always auto-generated server-side) | — (removed) |
+| — (missing) | `agent_id?` (backend accepts it; SDK previously could not send it) |
+
+**List params now require `user_id`** — `MemoryListParams.user_id` and
+`ConversationListParams.user_id` changed `user_id?: string` → `user_id: string`.
+The backend declares `user_id` as `Query(..., min_length=1)`; omitting it
+returns 422.
+
+**`Conversation` required-nullable convention** — `agent_id` / `summary` /
+`metadata` changed from optional (`field?: T | null`) to required-nullable
+(`field: T | null`), matching the backend (always emitted, value may be null)
+and the OpenAPI `required[]` convention adopted 2026-06-11.
+
+### Fixed (non-breaking, docs)
+
+- `conversations.ts` stale JSDoc: removed "Zep OSS" / "temporal graph" / "API
+  v2.0" references (the backend uses a Native SummaryWorker); `getSummary`
+  doc no longer advertises removed `key_points` / `generated_at`;
+  `@param conversationId` now documents the compound id (not "UUID");
+  `delete()` documented as soft-delete (was "permanently removed").
+- `memories.ts`: removed "via Mem0" (Native pgvector).
+- `tenant.ts` `ApiKeyCreate.scopes` `@default` corrected `["*"]` →
+  `["read", "write"]` (backend tightened in security-scopes-admin-hardening,
+  2026-06-11).
+
+### Migration
+
+- `memories.list(...)`: `result.data` → `result.memories`;
+  `result.pagination.total` → `result.total_count`;
+  `result.pagination.has_more` → `result.has_next`.
+- `conversations.create({ session_id })` → drop `session_id` (it was ignored
+  anyway); pass `agent_id` instead if you need agent association.
+- `memories.list()` / `conversations.list()` now require `user_id` — add it if
+  you were relying on it being optional (the call would 422 at runtime before).
+
 ## [4.0.0] - 2026-06-11
 
 ### Changed — BREAKING (memory-conversation-contract-reconciliation)

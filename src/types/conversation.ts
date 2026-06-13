@@ -43,16 +43,22 @@ export interface Conversation {
   tenant_id: string;
   /** User ID that owns this conversation */
   user_id: string;
-  /** Originating agent (null when not agent-created) */
-  agent_id?: string | null;
+  /**
+   * Originating agent (null when not agent-created).
+   *
+   * v5.0.0: required-nullable convention — always emitted by the backend
+   * (`ConversationResponse.agent_id: str | None`), value may be null. Was
+   * `agent_id?: string | null` (optional); now `string | null` (required dict).
+   */
+  agent_id: string | null;
   /** Conversation status (e.g. active / archived) */
   status: string;
-  /** Auto-generated conversation summary */
-  summary?: string | null;
+  /** Auto-generated conversation summary (null until first summary worker run) */
+  summary: string | null;
   /** Total number of messages in the conversation */
   message_count: number;
-  /** Additional metadata key-value pairs */
-  metadata?: Record<string, unknown>;
+  /** Additional metadata key-value pairs (always emitted, defaults to {}) */
+  metadata: Record<string, unknown>;
   /** Timestamp when the conversation was created (ISO 8601) */
   created_at: string;
   /** Timestamp when the conversation was last updated (ISO 8601) */
@@ -62,13 +68,20 @@ export interface Conversation {
 /**
  * Request payload for creating a new conversation.
  *
- * POST /conversations
+ * POST /conversations — mirrors backend `CreateConversationRequest`.
+ *
+ * v5.0.0 BREAKING: removed phantom `session_id` — the backend
+ * (`CreateConversationRequest`) does not accept it; it was silently dropped
+ * by Pydantic `extra=ignore`, and the session id is ALWAYS auto-generated
+ * server-side regardless of input (the old "auto-generated if not provided"
+ * doc was false). Added `agent_id` — the backend accepts it but the SDK had
+ * no way to send it.
  */
 export interface ConversationCreate {
   /** User ID to associate the conversation with */
   user_id: string;
-  /** Custom session ID (auto-generated if not provided) */
-  session_id?: string;
+  /** Optional agent identifier to associate the conversation with */
+  agent_id?: string;
   /** Additional metadata key-value pairs */
   metadata?: Record<string, unknown>;
 }

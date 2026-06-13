@@ -114,9 +114,12 @@ export interface ApiKeyCreate {
   /** Human-readable name for the API key (1-255 characters) */
   name: string;
   /**
-   * Permission scopes for the key (known values: read, write, admin, "*").
-   * @default ["*"] — the backend default grants the full wildcard; tightening
-   * the default is a separate backend security follow-up.
+   * Permission scopes for the key (known values: read, write, admin,
+   * admin:dashboard, feedback:diagnose, "*" wildcard).
+   * @default ["read", "write"] — least-privilege default (backend tightened
+   * in security-scopes-admin-hardening, 2026-06-11). The "*" wildcard must be
+   * requested explicitly; the default intentionally omits admin:dashboard /
+   * feedback:diagnose.
    */
   scopes?: string[];
   /**
