@@ -157,6 +157,20 @@ describe('DashboardService.export()', () => {
     expect(config.responseType).toBe('text');
   });
 
+  it('bypasses the cache even when caching is enabled (getText)', async () => {
+    // A cache:true client: get() would serve the 2nd identical call from cache,
+    // but export() uses getText() which must always hit the network. Two identical
+    // exports → two axios.get calls proves the cache-bypass (non-vacuous; a cache:false
+    // client could not distinguish bypass from a disabled cache).
+    const cachedClient = new NexusClient({ apiKey: 'nx_test_key', cache: {}, retry: false });
+    mockAxiosInstance.get.mockResolvedValue(axiosTextResponse(MOCK_CSV));
+
+    await cachedClient.dashboard.export({ dataset: 'quality_distribution' });
+    await cachedClient.dashboard.export({ dataset: 'quality_distribution' });
+
+    expect(mockAxiosInstance.get).toHaveBeenCalledTimes(2);
+  });
+
   it('forwards AbortSignal', async () => {
     const controller = new AbortController();
 

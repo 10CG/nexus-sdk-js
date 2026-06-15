@@ -55,7 +55,9 @@ export interface DashboardExportParams {
    * Filter results to a specific tenant.
    *
    * Only usable by API keys that carry the admin scope.  The backend returns
-   * HTTP 403 when this field is present but the caller lacks admin privileges.
+   * HTTP 403 when this field is present but the caller lacks admin privileges,
+   * and HTTP 400 when the value is not a valid UUID (it is normalized to
+   * canonical form server-side).
    */
   target_tenant_id?: string;
 }
