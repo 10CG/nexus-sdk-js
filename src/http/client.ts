@@ -255,6 +255,35 @@ export class HttpClient {
   }
 
   /**
+   * Send a GET request and return the raw response body as a string.
+   *
+   * Intended for file-download endpoints (e.g. `GET /dashboard/export`) that
+   * return `text/csv` or `application/json` as a raw file stream rather than a
+   * JSON-parsed object.  The retry and auth interceptors still apply; the
+   * response cache is intentionally bypassed (export payloads are not cacheable
+   * at the SDK layer).
+   *
+   * @param path   - URL path relative to the base URL (e.g. `/dashboard/export`).
+   * @param params - Optional query parameters.
+   * @param signal - Optional {@link AbortSignal} to cancel the request.
+   * @returns The raw response body as a string.
+   */
+  async getText(
+    path: string,
+    params?: Record<string, unknown>,
+    signal?: AbortSignal,
+  ): Promise<string> {
+    return this.retry.execute(async () => {
+      const response = await this.axios.get<string>(path, {
+        params,
+        signal,
+        responseType: 'text',
+      });
+      return response.data;
+    });
+  }
+
+  /**
    * Send a DELETE request.
    *
    * @typeParam T - Expected shape of the response body.

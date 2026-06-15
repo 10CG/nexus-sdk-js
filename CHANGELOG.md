@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `DashboardService` + `nexus.dashboard.export()` method (US-033b FU-3).
+  Calls `GET /v1/dashboard/export` and returns the raw file body as a `string`
+  (CSV or JSON text, not parsed).  Accepts `DashboardExportParams`:
+  `dataset` (required, one of six whitelisted values), `format?` (`'csv'` |
+  `'json'`, defaults to `'csv'` server-side), `target_tenant_id?` (admin only).
+  Registered as `nexus.dashboard` on `NexusClient`.
+- `DashboardExportDataset` and `DashboardExportParams` types exported from
+  `src/types/dashboard.ts` and the package root.
+- `HttpClient.getText()` internal method for raw-text GET requests
+  (`responseType: 'text'`); used by `DashboardService.export()`.
+
+### Deferred (WS realtime subscriptions)
+
+A `DashboardService.subscribe()` WebSocket helper was evaluated for this FU but
+deferred to FU-4 (WS replay/catchup).  The WS message schema is owned by FU-4,
+and the browser/Node `WebSocket` abstraction is a non-trivial independent surface.
+
 ## [5.0.0] - 2026-06-13
 
 ### Changed — BREAKING (memlist-convreq-contract-reconciliation)
