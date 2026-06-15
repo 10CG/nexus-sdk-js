@@ -113,3 +113,9 @@ export type {
   ErrorReportRequest,
   ErrorReportResponse,
 } from './error';
+
+// Dashboard types
+export type {
+  DashboardExportDataset,
+  DashboardExportParams,
+} from './dashboard';

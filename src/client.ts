@@ -19,6 +19,7 @@ import { ActivityService } from './services/activities';
 import { TenantService } from './services/tenants';
 import { FeedbackService } from './services/feedback';
 import { ErrorService } from './services/errors';
+import { DashboardService } from './services/dashboard';
 
 /**
  * Nexus AI Cognitive Services SDK client.
@@ -70,6 +71,9 @@ export class NexusClient {
   /** Error reporting — submit structured error reports (US-031). */
   public readonly errors: ErrorService;
 
+  /** Dashboard analytics — export datasets as CSV or JSON (US-033b FU-3). */
+  public readonly dashboard: DashboardService;
+
   /** @internal Shared HTTP transport. */
   private readonly http: HttpClient;
 
@@ -93,6 +97,7 @@ export class NexusClient {
     this.tenants = new TenantService(this.http);
     this.feedback = new FeedbackService(this.http);
     this.errors = new ErrorService(this.http);
+    this.dashboard = new DashboardService(this.http);
 
     // Wire up auto error reporting if enabled.
     if (resolved.autoErrorReport) {
