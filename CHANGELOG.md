@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-06-16
+
 ### Added
 
 - `DashboardService` + `nexus.dashboard.export()` method (US-033b FU-3).
